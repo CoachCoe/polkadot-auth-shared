@@ -1,10 +1,13 @@
 export interface ExchangeRateProvider {
   getRate(fromCurrency: string, toCurrency: string): Promise<number>;
-  getRates(fromCurrency: string, toCurrencies: string[]): Promise<Record<string, number>>;
+  getRates(
+    fromCurrency: string,
+    toCurrencies: string[],
+  ): Promise<Record<string, number>>;
 }
 
 export interface ExchangeRateConfig {
-  provider: 'coingecko' | 'mock';
+  provider: "coingecko" | "mock";
   apiKey?: string;
   baseUrl?: string;
   timeout?: number;
@@ -41,7 +44,7 @@ export class ExchangeRateService implements ExchangeRateProvider {
     try {
       let rate: number;
 
-      if (this.config.provider === 'coingecko') {
+      if (this.config.provider === "coingecko") {
         rate = await this.getCoinGeckoRate(fromCurrency, toCurrency);
       } else {
         rate = this.getMockRate(fromCurrency, toCurrency);
@@ -55,11 +58,11 @@ export class ExchangeRateService implements ExchangeRateProvider {
 
       return rate;
     } catch (error) {
-      console.error('Exchange rate fetch failed:', error);
+      console.error("Exchange rate fetch failed:", error);
 
       // Return cached rate if available, otherwise fallback to mock
       if (cached) {
-        console.warn('Using cached exchange rate due to API error');
+        console.warn("Using cached exchange rate due to API error");
         return cached.rate;
       }
 
@@ -70,11 +73,14 @@ export class ExchangeRateService implements ExchangeRateProvider {
   /**
    * Get multiple exchange rates at once
    */
-  async getRates(fromCurrency: string, toCurrencies: string[]): Promise<Record<string, number>> {
+  async getRates(
+    fromCurrency: string,
+    toCurrencies: string[],
+  ): Promise<Record<string, number>> {
     const rates: Record<string, number> = {};
 
     // Fetch all rates in parallel
-    const ratePromises = toCurrencies.map(async toCurrency => {
+    const ratePromises = toCurrencies.map(async (toCurrency) => {
       const rate = await this.getRate(fromCurrency, toCurrency);
       return { toCurrency, rate };
     });
@@ -82,11 +88,17 @@ export class ExchangeRateService implements ExchangeRateProvider {
     const results = await Promise.allSettled(ratePromises);
 
     results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         rates[result.value.toCurrency] = result.value.rate;
       } else {
-        console.error(`Failed to fetch rate for ${toCurrencies[index]}:`, result.reason);
-        rates[toCurrencies[index]] = this.getMockRate(fromCurrency, toCurrencies[index]);
+        console.error(
+          `Failed to fetch rate for ${toCurrencies[index]}:`,
+          result.reason,
+        );
+        rates[toCurrencies[index]] = this.getMockRate(
+          fromCurrency,
+          toCurrencies[index],
+        );
       }
     });
 
@@ -96,8 +108,11 @@ export class ExchangeRateService implements ExchangeRateProvider {
   /**
    * Get rate from CoinGecko API
    */
-  private async getCoinGeckoRate(fromCurrency: string, toCurrency: string): Promise<number> {
-    const baseUrl = this.config.baseUrl || 'https://api.coingecko.com/api/v3';
+  private async getCoinGeckoRate(
+    fromCurrency: string,
+    toCurrency: string,
+  ): Promise<number> {
+    const baseUrl = this.config.baseUrl || "https://api.coingecko.com/api/v3";
     const url = `${baseUrl}/simple/price?ids=${this.getCoinGeckoId(fromCurrency)}&vs_currencies=${toCurrency.toLowerCase()}`;
 
     const controller = new AbortController();
@@ -107,23 +122,27 @@ export class ExchangeRateService implements ExchangeRateProvider {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          Accept: 'application/json',
-          ...(this.config.apiKey && { 'X-CG-API-KEY': this.config.apiKey }),
+          Accept: "application/json",
+          ...(this.config.apiKey && { "X-CG-API-KEY": this.config.apiKey }),
         },
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `CoinGecko API error: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
       const coinId = this.getCoinGeckoId(fromCurrency);
       const rate = data[coinId]?.[toCurrency.toLowerCase()];
 
-      if (typeof rate !== 'number') {
-        throw new Error(`Invalid rate data from CoinGecko: ${JSON.stringify(data)}`);
+      if (typeof rate !== "number") {
+        throw new Error(
+          `Invalid rate data from CoinGecko: ${JSON.stringify(data)}`,
+        );
       }
 
       return rate;
@@ -137,11 +156,11 @@ export class ExchangeRateService implements ExchangeRateProvider {
    */
   private getCoinGeckoId(currency: string): string {
     const mapping: Record<string, string> = {
-      USD: 'usd',
-      ARS: 'usd', // Use USD as base for ARS conversion
-      BRL: 'usd', // Use USD as base for BRL conversion
-      USDC: 'usd-coin',
-      USDT: 'tether',
+      USD: "usd",
+      ARS: "usd", // Use USD as base for ARS conversion
+      BRL: "usd", // Use USD as base for BRL conversion
+      USDC: "usd-coin",
+      USDT: "tether",
     };
 
     return mapping[currency.toUpperCase()] || currency.toLowerCase();
@@ -205,7 +224,10 @@ export class ExchangeRateService implements ExchangeRateProvider {
   /**
    * Get cache statistics
    */
-  getCacheStats(): { size: number; entries: Array<{ key: string; age: number }> } {
+  getCacheStats(): {
+    size: number;
+    entries: Array<{ key: string; age: number }>;
+  } {
     const now = Date.now();
     return {
       size: this.cache.size,
@@ -220,7 +242,9 @@ export class ExchangeRateService implements ExchangeRateProvider {
 /**
  * Factory function to create exchange rate service
  */
-export function createExchangeRateService(config: ExchangeRateConfig): ExchangeRateService {
+export function createExchangeRateService(
+  config: ExchangeRateConfig,
+): ExchangeRateService {
   return new ExchangeRateService(config);
 }
 
@@ -228,7 +252,7 @@ export function createExchangeRateService(config: ExchangeRateConfig): ExchangeR
  * Default configuration for development
  */
 export const DEFAULT_EXCHANGE_RATE_CONFIG: ExchangeRateConfig = {
-  provider: 'coingecko',
+  provider: "coingecko",
   timeout: 5000,
   cacheTimeout: 60000,
 };

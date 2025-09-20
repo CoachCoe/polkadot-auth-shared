@@ -1,5 +1,9 @@
-import { ComplianceCheck, KYCResult, RemittanceTransaction } from '../types/remittance';
-import { ErrorService } from './errorService';
+import {
+  ComplianceCheck,
+  KYCResult,
+  RemittanceTransaction,
+} from "../types/remittance.js";
+import { ErrorService } from "./errorService.js";
 
 export interface KYCProvider {
   verifyDocuments(documents: any): Promise<DocumentVerificationResult>;
@@ -52,56 +56,65 @@ export class ComplianceService {
       const docResult = await this.kycProvider.verifyDocuments(documents);
       if (!docResult.isValid) {
         return {
-          status: 'rejected',
+          status: "rejected",
           riskScore: 1.0,
-          requiredActions: ['DOCUMENT_VERIFICATION_FAILED'],
+          requiredActions: ["DOCUMENT_VERIFICATION_FAILED"],
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         };
       }
 
       // 2. Identity verification
-      const identityResult = await this.kycProvider.verifyIdentity(documents.identity);
+      const identityResult = await this.kycProvider.verifyIdentity(
+        documents.identity,
+      );
       if (!identityResult.isVerified) {
         return {
-          status: 'rejected',
+          status: "rejected",
           riskScore: 0.9,
-          requiredActions: ['IDENTITY_VERIFICATION_FAILED'],
+          requiredActions: ["IDENTITY_VERIFICATION_FAILED"],
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         };
       }
 
       // 3. AML screening
-      const amlResult = await this.amlProvider.screenUser(documents.identity, documents.address);
+      const amlResult = await this.amlProvider.screenUser(
+        documents.identity,
+        documents.address,
+      );
 
       // 4. Calculate overall risk score
-      const riskScore = await this.calculateRiskScore(docResult, identityResult, amlResult);
+      const riskScore = await this.calculateRiskScore(
+        docResult,
+        identityResult,
+        amlResult,
+      );
 
       // 5. Determine KYC status
-      let status: 'pending' | 'verified' | 'rejected';
+      let status: "pending" | "verified" | "rejected";
       let requiredActions: string[] = [];
 
       if (riskScore < this.riskThresholds.low) {
-        status = 'verified';
+        status = "verified";
       } else if (riskScore < this.riskThresholds.medium) {
-        status = 'pending';
-        requiredActions = ['MANUAL_REVIEW'];
+        status = "pending";
+        requiredActions = ["MANUAL_REVIEW"];
       } else {
-        status = 'rejected';
-        requiredActions = ['HIGH_RISK_DETECTED'];
+        status = "rejected";
+        requiredActions = ["HIGH_RISK_DETECTED"];
       }
 
       // Add specific actions based on AML results
       if (amlResult.sanctions.length > 0) {
-        status = 'rejected';
-        requiredActions.push('SANCTIONS_MATCH');
+        status = "rejected";
+        requiredActions.push("SANCTIONS_MATCH");
       }
 
       if (amlResult.pep) {
-        requiredActions.push('PEP_DETECTED');
+        requiredActions.push("PEP_DETECTED");
       }
 
       if (amlResult.adverseMedia.length > 0) {
-        requiredActions.push('ADVERSE_MEDIA');
+        requiredActions.push("ADVERSE_MEDIA");
       }
 
       return {
@@ -111,15 +124,17 @@ export class ComplianceService {
         expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
       };
     } catch (error) {
-      console.error('KYC verification failed:', error);
-      throw ErrorService.createError('KYC_FAILED', 'KYC verification failed');
+      console.error("KYC verification failed:", error);
+      throw ErrorService.createError("KYC_FAILED", "KYC verification failed");
     }
   }
 
   /**
    * Monitor transaction for compliance
    */
-  async monitorTransaction(transaction: RemittanceTransaction): Promise<ComplianceCheck> {
+  async monitorTransaction(
+    transaction: RemittanceTransaction,
+  ): Promise<ComplianceCheck> {
     try {
       const riskFactors = await this.analyzeTransactionRisk(transaction);
 
@@ -130,7 +145,7 @@ export class ComplianceService {
           passed: false,
           riskScore: riskFactors.score,
           flags: riskFactors.flags,
-          requiredActions: ['MANUAL_REVIEW', 'ENHANCED_DUE_DILIGENCE'],
+          requiredActions: ["MANUAL_REVIEW", "ENHANCED_DUE_DILIGENCE"],
         };
       }
 
@@ -139,7 +154,7 @@ export class ComplianceService {
           passed: true,
           riskScore: riskFactors.score,
           flags: riskFactors.flags,
-          requiredActions: ['ENHANCED_MONITORING'],
+          requiredActions: ["ENHANCED_MONITORING"],
         };
       }
 
@@ -150,10 +165,10 @@ export class ComplianceService {
         requiredActions: [],
       };
     } catch (error) {
-      console.error('Transaction monitoring failed:', error);
+      console.error("Transaction monitoring failed:", error);
       throw ErrorService.createError(
-        'COMPLIANCE_MONITORING_FAILED',
-        'Transaction monitoring failed'
+        "COMPLIANCE_MONITORING_FAILED",
+        "Transaction monitoring failed",
       );
     }
   }
@@ -161,7 +176,9 @@ export class ComplianceService {
   /**
    * Analyze transaction risk factors
    */
-  private async analyzeTransactionRisk(transaction: RemittanceTransaction): Promise<{
+  private async analyzeTransactionRisk(
+    transaction: RemittanceTransaction,
+  ): Promise<{
     score: number;
     flags: string[];
   }> {
@@ -171,16 +188,16 @@ export class ComplianceService {
     // Amount-based risk
     if (transaction.amount > 10000) {
       riskScore += 0.3;
-      flags.push('HIGH_AMOUNT');
+      flags.push("HIGH_AMOUNT");
     } else if (transaction.amount > 5000) {
       riskScore += 0.2;
-      flags.push('MEDIUM_AMOUNT');
+      flags.push("MEDIUM_AMOUNT");
     }
 
     // Currency risk
-    if (transaction.targetCurrency === 'ARS' && transaction.amount > 5000) {
+    if (transaction.targetCurrency === "ARS" && transaction.amount > 5000) {
       riskScore += 0.1;
-      flags.push('HIGH_VOLUME_ARS');
+      flags.push("HIGH_VOLUME_ARS");
     }
 
     // Time-based risk (weekend/holiday transactions)
@@ -191,13 +208,13 @@ export class ComplianceService {
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       // Weekend
       riskScore += 0.1;
-      flags.push('WEEKEND_TRANSACTION');
+      flags.push("WEEKEND_TRANSACTION");
     }
 
     if (hour < 6 || hour > 22) {
       // Off-hours
       riskScore += 0.1;
-      flags.push('OFF_HOURS_TRANSACTION');
+      flags.push("OFF_HOURS_TRANSACTION");
     }
 
     // Pattern analysis (would integrate with historical data)
@@ -211,7 +228,9 @@ export class ComplianceService {
   /**
    * Analyze transaction patterns
    */
-  private async analyzeTransactionPattern(transaction: RemittanceTransaction): Promise<{
+  private async analyzeTransactionPattern(
+    transaction: RemittanceTransaction,
+  ): Promise<{
     score: number;
     flags: string[];
   }> {
@@ -224,7 +243,7 @@ export class ComplianceService {
     const random = Math.random();
     if (random > 0.8) {
       score += 0.2;
-      flags.push('UNUSUAL_PATTERN');
+      flags.push("UNUSUAL_PATTERN");
     }
 
     return { score, flags };
@@ -236,7 +255,7 @@ export class ComplianceService {
   private async calculateRiskScore(
     docResult: DocumentVerificationResult,
     identityResult: IdentityVerificationResult,
-    amlResult: AMLResult
+    amlResult: AMLResult,
   ): Promise<number> {
     let riskScore = 0;
 
@@ -255,7 +274,9 @@ export class ComplianceService {
   /**
    * Flag transaction for manual review
    */
-  private async flagForReview(transaction: RemittanceTransaction): Promise<void> {
+  private async flagForReview(
+    transaction: RemittanceTransaction,
+  ): Promise<void> {
     // In production, this would create a review ticket in your compliance system
     console.log(`Flagging transaction ${transaction.id} for manual review`);
   }
@@ -271,8 +292,8 @@ export class ComplianceService {
   }> {
     // Mock implementation
     return {
-      kycStatus: 'verified',
-      riskLevel: 'low',
+      kycStatus: "verified",
+      riskLevel: "low",
       lastReview: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       nextReview: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000),
     };
@@ -288,11 +309,11 @@ class MockKYCProvider implements KYCProvider {
     return {
       isValid: true,
       confidence: 0.95,
-      documentType: 'passport',
+      documentType: "passport",
       extractedData: {
-        name: 'John Doe',
-        documentNumber: 'A1234567',
-        expiryDate: '2030-12-31',
+        name: "John Doe",
+        documentNumber: "A1234567",
+        expiryDate: "2030-12-31",
       },
     };
   }
@@ -327,7 +348,7 @@ class MockAMLProvider implements KYCProvider {
     return {
       isValid: true,
       confidence: 0.95,
-      documentType: 'passport',
+      documentType: "passport",
       extractedData: {},
     };
   }

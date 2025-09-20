@@ -1,5 +1,11 @@
-import type { AuthResult, Challenge, Session, SIWEMessage, SIWESignature } from '../types/index.js';
-import { createHash, randomBytes } from '../utils/crypto.js';
+import type {
+  AuthResult,
+  Challenge,
+  Session,
+  SIWEMessage,
+  SIWESignature,
+} from "../types/index.js";
+import { createHash, randomBytes } from "../utils/crypto.js";
 
 export interface AuthServiceConfig {
   challengeExpiration?: number; // in seconds, default 5 minutes
@@ -28,15 +34,20 @@ export class AuthService {
   /**
    * Create a new authentication challenge
    */
-  async createChallenge(clientId: string, userAddress?: string): Promise<Challenge> {
+  async createChallenge(
+    clientId: string,
+    userAddress?: string,
+  ): Promise<Challenge> {
     const challengeId = this.generateId();
     const nonce = this.generateNonce();
     const issuedAt = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + this.config.challengeExpiration! * 1000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + this.config.challengeExpiration! * 1000,
+    ).toISOString();
 
     // Create SIWE message
     const message = this.createSIWEMessage({
-      address: userAddress || '',
+      address: userAddress || "",
       nonce,
       issuedAt,
       expiresAt,
@@ -61,15 +72,18 @@ export class AuthService {
   /**
    * Verify a signature against a challenge
    */
-  async verifySignature(signature: SIWESignature, challenge: Challenge): Promise<AuthResult> {
+  async verifySignature(
+    signature: SIWESignature,
+    challenge: Challenge,
+  ): Promise<AuthResult> {
     try {
       // Check if challenge exists and is valid
       const storedChallenge = this.challenges.get(challenge.id);
       if (!storedChallenge) {
         return {
           success: false,
-          error: 'Challenge not found',
-          errorCode: 'CHALLENGE_NOT_FOUND',
+          error: "Challenge not found",
+          errorCode: "CHALLENGE_NOT_FOUND",
         };
       }
 
@@ -78,8 +92,8 @@ export class AuthService {
         this.challenges.delete(challenge.id);
         return {
           success: false,
-          error: 'Challenge has expired',
-          errorCode: 'CHALLENGE_EXPIRED',
+          error: "Challenge has expired",
+          errorCode: "CHALLENGE_EXPIRED",
         };
       }
 
@@ -87,18 +101,21 @@ export class AuthService {
       if (storedChallenge.used) {
         return {
           success: false,
-          error: 'Challenge has already been used',
-          errorCode: 'CHALLENGE_USED',
+          error: "Challenge has already been used",
+          errorCode: "CHALLENGE_USED",
         };
       }
 
       // Verify the signature
-      const isValid = await this.verifySignatureCryptographically(signature, storedChallenge);
+      const isValid = await this.verifySignatureCryptographically(
+        signature,
+        storedChallenge,
+      );
       if (!isValid) {
         return {
           success: false,
-          error: 'Invalid signature',
-          errorCode: 'INVALID_SIGNATURE',
+          error: "Invalid signature",
+          errorCode: "INVALID_SIGNATURE",
         };
       }
 
@@ -112,8 +129,8 @@ export class AuthService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        errorCode: 'VERIFICATION_ERROR',
+        error: error instanceof Error ? error.message : "Unknown error",
+        errorCode: "VERIFICATION_ERROR",
       };
     }
   }
@@ -124,7 +141,7 @@ export class AuthService {
   async createSession(
     address: string,
     clientId: string,
-    parsedMessage: SIWEMessage
+    parsedMessage: SIWEMessage,
   ): Promise<Session> {
     const sessionId = this.generateId();
     const accessToken = this.generateToken();
@@ -135,7 +152,8 @@ export class AuthService {
 
     const now = Date.now();
     const accessTokenExpiresAt = now + this.config.sessionExpiration! * 1000;
-    const refreshTokenExpiresAt = now + this.config.sessionExpiration! * 2 * 1000; // 48 hours
+    const refreshTokenExpiresAt =
+      now + this.config.sessionExpiration! * 2 * 1000; // 48 hours
 
     const session: Session = {
       id: sessionId,
@@ -195,8 +213,10 @@ export class AuthService {
 
         session.accessToken = newAccessToken;
         session.refreshToken = newRefreshToken;
-        session.accessTokenExpiresAt = now + this.config.sessionExpiration! * 1000;
-        session.refreshTokenExpiresAt = now + this.config.sessionExpiration! * 2 * 1000;
+        session.accessTokenExpiresAt =
+          now + this.config.sessionExpiration! * 1000;
+        session.refreshTokenExpiresAt =
+          now + this.config.sessionExpiration! * 2 * 1000;
         session.lastUsedAt = now;
 
         return session;
@@ -246,12 +266,16 @@ export class AuthService {
     expiresAt: string;
   }): SIWEMessage {
     return {
-      domain: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
+      domain:
+        typeof window !== "undefined" ? window.location.hostname : "localhost",
       address: params.address,
-      statement: 'Sign in with Polkadot to authenticate with the application.',
-      uri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-      version: '1',
-      chainId: '1', // Polkadot mainnet
+      statement: "Sign in with Polkadot to authenticate with the application.",
+      uri:
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "http://localhost:3000",
+      version: "1",
+      chainId: "1", // Polkadot mainnet
       nonce: params.nonce,
       issuedAt: params.issuedAt,
       expirationTime: params.expiresAt,
@@ -283,33 +307,37 @@ Expiration Time: ${message.expirationTime}`;
    */
   private async verifySignatureCryptographically(
     signature: SIWESignature,
-    challenge: Challenge
+    challenge: Challenge,
   ): Promise<boolean> {
     try {
       // Basic validation
       if (!signature.signature || !signature.address || !signature.message) {
-        console.warn('⚠️  SECURITY: Missing signature components');
+        console.warn("⚠️  SECURITY: Missing signature components");
         return false;
       }
 
       // Check if the message matches the challenge
       if (signature.message !== challenge.message) {
-        console.warn('⚠️  SECURITY: Message mismatch in signature verification');
+        console.warn(
+          "⚠️  SECURITY: Message mismatch in signature verification",
+        );
         return false;
       }
 
       // Check if the nonce matches
       if (signature.nonce !== challenge.nonce) {
-        console.warn('⚠️  SECURITY: Nonce mismatch in signature verification');
+        console.warn("⚠️  SECURITY: Nonce mismatch in signature verification");
         return false;
       }
 
       // Import Polkadot crypto utilities dynamically to handle browser compatibility
-      const { signatureVerify, decodeAddress, isAddress } = await import('@polkadot/util-crypto');
+      const { signatureVerify, decodeAddress, isAddress } = await import(
+        "@polkadot/util-crypto"
+      );
 
       // Validate the address format
       if (!isAddress(signature.address)) {
-        console.warn('⚠️  SECURITY: Invalid Polkadot address format');
+        console.warn("⚠️  SECURITY: Invalid Polkadot address format");
         return false;
       }
 
@@ -317,35 +345,44 @@ Expiration Time: ${message.expirationTime}`;
       const publicKey = decodeAddress(signature.address);
 
       // Verify the signature using Polkadot's signature verification
-      const verification = signatureVerify(signature.message, signature.signature, publicKey);
+      const verification = signatureVerify(
+        signature.message,
+        signature.signature,
+        publicKey,
+      );
 
       if (!verification.isValid) {
-        console.warn('⚠️  SECURITY: Signature verification failed', {
+        console.warn("⚠️  SECURITY: Signature verification failed", {
           address: signature.address,
         });
         return false;
       }
 
       // Additional security checks
-      if (verification.crypto !== 'sr25519' && verification.crypto !== 'ed25519') {
-        console.warn('⚠️  SECURITY: Unsupported signature algorithm', {
+      if (
+        verification.crypto !== "sr25519" &&
+        verification.crypto !== "ed25519"
+      ) {
+        console.warn("⚠️  SECURITY: Unsupported signature algorithm", {
           crypto: verification.crypto,
         });
         return false;
       }
 
-      console.log('✅ Signature verification successful', {
+      console.log("✅ Signature verification successful", {
         address: signature.address,
         crypto: verification.crypto,
       });
 
       return true;
     } catch (error) {
-      console.error('Signature verification error:', error);
+      console.error("Signature verification error:", error);
 
       // In case of import errors or other issues, fall back to development mode
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️  FALLBACK: Using development mode signature verification due to error');
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "⚠️  FALLBACK: Using development mode signature verification due to error",
+        );
         return true;
       }
 
@@ -358,8 +395,8 @@ Expiration Time: ${message.expirationTime}`;
    */
   private generateId(): string {
     return Array.from(randomBytes(16))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   /**
@@ -367,8 +404,8 @@ Expiration Time: ${message.expirationTime}`;
    */
   private generateNonce(): string {
     return Array.from(randomBytes(32))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   /**
@@ -376,8 +413,8 @@ Expiration Time: ${message.expirationTime}`;
    */
   private generateToken(): string {
     return Array.from(randomBytes(32))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   /**
@@ -385,7 +422,7 @@ Expiration Time: ${message.expirationTime}`;
    */
   private generateFingerprint(address: string, clientId: string): string {
     const data = `${address}:${clientId}:${Date.now()}`;
-    return createHash('sha256').update(data).digest('hex');
+    return createHash("sha256").update(data).digest("hex");
   }
 }
 

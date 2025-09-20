@@ -1,14 +1,14 @@
-import { createClient } from 'polkadot-api';
-import { chainSpec } from 'polkadot-api/chains/polkadot';
-import { getSmProvider } from 'polkadot-api/sm-provider';
-import { start } from 'polkadot-api/smoldot';
-import { getWsProvider } from 'polkadot-api/ws-provider/node';
-import { createLogger } from '../utils/logger';
+import { createClient } from "polkadot-api";
+import { chainSpec } from "polkadot-api/chains/polkadot";
+import { getSmProvider } from "polkadot-api/sm-provider";
+import { start } from "polkadot-api/smoldot";
+import { getWsProvider } from "polkadot-api/ws-provider/node";
+import { createLogger } from "../utils/logger.js";
 
-const logger = createLogger('papi-client');
+const logger = createLogger("papi-client");
 
 export interface PapiClientConfig {
-  chain: 'polkadot' | 'kusama';
+  chain: "polkadot" | "kusama";
   endpoint?: string;
   useLightClient?: boolean;
 }
@@ -30,9 +30,14 @@ export class PapiClientService {
         await this.connectWebSocket();
       }
       this.isConnected = true;
-      logger.info('PAPI client connected successfully', { chain: this.config.chain });
+      logger.info("PAPI client connected successfully", {
+        chain: this.config.chain,
+      });
     } catch (error) {
-      logger.error('Failed to connect PAPI client', { error, chain: this.config.chain });
+      logger.error("Failed to connect PAPI client", {
+        error,
+        chain: this.config.chain,
+      });
       throw error;
     }
   }
@@ -50,10 +55,10 @@ export class PapiClientService {
 
   private getDefaultEndpoint(): string {
     switch (this.config.chain) {
-      case 'polkadot':
-        return 'wss://rpc.polkadot.io';
-      case 'kusama':
-        return 'wss://kusama-rpc.polkadot.io';
+      case "polkadot":
+        return "wss://rpc.polkadot.io";
+      case "kusama":
+        return "wss://kusama-rpc.polkadot.io";
       default:
         throw new Error(`Unsupported chain: ${this.config.chain}`);
     }
@@ -63,13 +68,13 @@ export class PapiClientService {
     if (this.client && this.isConnected) {
       await this.client.destroy();
       this.isConnected = false;
-      logger.info('PAPI client disconnected', { chain: this.config.chain });
+      logger.info("PAPI client disconnected", { chain: this.config.chain });
     }
   }
 
   getClient() {
     if (!this.isConnected) {
-      throw new Error('PAPI client is not connected');
+      throw new Error("PAPI client is not connected");
     }
     return this.client;
   }
@@ -89,7 +94,7 @@ export class PapiClientService {
 
   async getAccountInfo(address: string): Promise<any> {
     const client = this.getClient();
-    return client.call('Account', 'Account', [address]);
+    return client.call("Account", "Account", [address]);
   }
 
   async getBalance(address: string): Promise<any> {
@@ -108,6 +113,8 @@ export class PapiClientService {
   }
 }
 
-export const createPapiClient = (config: PapiClientConfig): PapiClientService => {
+export const createPapiClient = (
+  config: PapiClientConfig,
+): PapiClientService => {
   return new PapiClientService(config);
 };

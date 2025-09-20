@@ -1,15 +1,30 @@
 # @polkadot-auth/core
 
-Framework-agnostic core for Polkadot authentication with SIWE-style messages.
+> 🚀 **Shared Components & Utilities** for the Polkadot Authentication Ecosystem
 
-## 🚀 Features
+A comprehensive, framework-agnostic core library that provides common functionality needed by Polkadot authentication services, eliminating code duplication and ensuring consistency across the ecosystem.
 
-- **SIWE-Style Authentication**: EIP-4361 compliant authentication messages
-- **Multi-Wallet Support**: Polkadot.js, Talisman, SubWallet, Nova Wallet
-- **Multi-Chain Support**: Polkadot, Kusama, Westend, Rococo
-- **Security Features**: Nonce-based replay protection, domain binding, request tracking
-- **TypeScript First**: Full type safety and IntelliSense support
-- **Framework Agnostic**: Use with any JavaScript/TypeScript framework
+## ✨ Features
+
+- 🔐 **SIWE-Style Authentication**: EIP-4361 compliant authentication messages
+- 🏗️ **Multi-Wallet Support**: Polkadot.js, Talisman, SubWallet, Nova Wallet
+- 🌐 **Multi-Chain Support**: Polkadot, Kusama, Westend, Rococo with backup RPC endpoints
+- 🛡️ **Security-First Design**: Nonce-based replay protection, domain binding, request tracking
+- 📱 **Cross-Platform**: Works in both browser and Node.js environments
+- 🔧 **TypeScript First**: Full type safety and IntelliSense support
+- 🏢 **Enterprise Ready**: Production configuration management and audit logging
+- 💰 **Remittance Services**: Built-in compliance and exchange rate services
+
+## 🎯 Purpose
+
+This package serves as the **foundational library** for the Polkadot authentication ecosystem, providing:
+
+- **Common Types & Interfaces** - Shared TypeScript definitions
+- **Cryptographic Utilities** - Cross-platform crypto functions
+- **Chain Management** - Multi-chain support with security features
+- **Wallet Providers** - Standardized wallet integration interfaces
+- **Authentication Services** - Core auth logic and session management
+- **Remittance Services** - Compliance and exchange rate functionality
 
 ## 📦 Installation
 
@@ -17,9 +32,9 @@ Framework-agnostic core for Polkadot authentication with SIWE-style messages.
 npm install @polkadot-auth/core
 ```
 
-## 🎯 Quick Start
+## 🚀 Quick Start
 
-### Basic Usage
+### Basic Authentication
 
 ```typescript
 import { createPolkadotAuth } from '@polkadot-auth/core';
@@ -33,7 +48,7 @@ const challenge = await auth.createChallenge('my-app');
 console.log(challenge.message);
 // Output:
 // polkadot-auth.localhost wants you to sign in with your Polkadot account:
-// 0x...
+// 5EJP9eSB1HpzjpuCJrna8KMcA6mmgaT8W4gSmwHaVDn25gHQ
 //
 // Sign this message to authenticate with Polkadot SSO
 //
@@ -49,13 +64,72 @@ console.log(challenge.message);
 // - https://polkadot-auth.localhost/profile
 ```
 
-### Custom Configuration
+### Using Individual Services
+
+```typescript
+import { 
+  authService, 
+  walletProviderService, 
+  createExchangeRateService,
+  configManager 
+} from '@polkadot-auth/core';
+
+// Use authentication service
+const result = await authService.authenticateUser(address, signature);
+
+// Get available wallet providers
+const providers = await walletProviderService.getAvailableProviders();
+
+// Create exchange rate service
+const exchangeService = createExchangeRateService({
+  provider: 'coingecko',
+  apiKey: 'your-api-key'
+});
+
+// Get production configuration
+const config = configManager.getConfig();
+```
+
+## 🏗️ Architecture
+
+### Core Components
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| **SIWEAuthService** | Authentication logic | SIWE message generation, signature verification |
+| **Wallet Providers** | Wallet integration | Multi-wallet support, standardized interface |
+| **Chain Management** | Multi-chain support | Security-focused config, backup RPC endpoints |
+| **Session Management** | Session handling | JWT-based sessions, refresh tokens |
+| **Remittance Services** | Financial operations | Compliance, exchange rates, treasury management |
+| **Configuration** | Production config | Environment management, security settings |
+
+### Supported Chains
+
+| Chain | RPC Endpoint | SS58 Format | Type | Backup RPCs |
+|-------|-------------|-------------|------|-------------|
+| **Polkadot** | `wss://rpc.polkadot.io` | 0 | Mainnet | 3 backup endpoints |
+| **Kusama** | `wss://kusama-rpc.polkadot.io` | 2 | Mainnet | 3 backup endpoints |
+| **Westend** | `wss://westend-rpc.polkadot.io` | 42 | Testnet | 2 backup endpoints |
+| **Rococo** | `wss://rococo-rpc.polkadot.io` | 42 | Testnet | 1 backup endpoint |
+
+### Supported Wallets
+
+| Wallet | Type | Features |
+|--------|------|----------|
+| **Polkadot.js** | Browser Extension | Official extension, full feature support |
+| **Talisman** | Browser Extension | Popular wallet, advanced features |
+| **SubWallet** | Browser Extension | Feature-rich, multi-chain support |
+| **Nova Wallet** | Mobile + Browser | Mobile app with browser bridge |
+
+## 🔧 Configuration
+
+### Basic Configuration
 
 ```typescript
 import { createPolkadotAuth } from '@polkadot-auth/core';
 
 const auth = createPolkadotAuth({
-  defaultChain: 'kusama',
+  defaultChain: 'polkadot',
   providers: ['polkadot-js', 'talisman'],
   session: {
     strategy: 'jwt',
@@ -69,71 +143,24 @@ const auth = createPolkadotAuth({
 });
 ```
 
-## 🔧 Configuration
-
-### PolkadotAuthConfig
+### Production Configuration
 
 ```typescript
-interface PolkadotAuthConfig {
-  defaultChain?: string; // Default chain (default: 'polkadot')
-  chains?: ChainConfig[]; // Custom chains
-  providers?: string[]; // Enabled wallet providers
-  customProviders?: WalletProvider[]; // Custom wallet providers
-  session?: SessionConfig; // Session configuration
-  database?: DatabaseConfig; // Database configuration
-  security?: SecurityConfig; // Security settings
-  ui?: UIConfig; // UI configuration
-}
+import { configManager } from '@polkadot-auth/core';
+
+// Load production configuration
+const config = configManager.getConfig({
+  environment: 'production',
+  database: {
+    type: 'postgres',
+    url: process.env.DATABASE_URL
+  },
+  security: {
+    enableAuditLogging: true,
+    enableRateLimiting: true
+  }
+});
 ```
-
-### Chain Configuration
-
-```typescript
-interface ChainConfig {
-  id: string; // Chain identifier
-  name: string; // Display name
-  rpcUrl: string; // RPC endpoint
-  ss58Format: number; // Address format
-  decimals?: number; // Token decimals
-  symbol?: string; // Token symbol
-  isTestnet?: boolean; // Is testnet
-}
-```
-
-### Security Configuration
-
-```typescript
-interface SecurityConfig {
-  enableNonce?: boolean; // Enable nonce-based replay protection
-  enableDomainBinding?: boolean; // Enable domain binding
-  enableRequestTracking?: boolean; // Enable request ID tracking
-  challengeExpiration?: number; // Challenge expiration in seconds
-  allowedDomains?: string[]; // Allowed domains for binding
-}
-```
-
-## 🏗️ Architecture
-
-### Core Components
-
-1. **SIWEAuthService**: Handles SIWE-style message generation and verification
-2. **Wallet Providers**: Interface for different wallet implementations
-3. **Chain Management**: Multi-chain support and configuration
-4. **Session Management**: Session creation, validation, and refresh
-
-### Default Chains
-
-- **Polkadot**: `wss://rpc.polkadot.io` (ss58: 0)
-- **Kusama**: `wss://kusama-rpc.polkadot.io` (ss58: 2)
-- **Westend**: `wss://westend-rpc.polkadot.io` (ss58: 42)
-- **Rococo**: `wss://rococo-rpc.polkadot.io` (ss58: 42)
-
-### Default Providers
-
-- **Polkadot.js Extension**: Official browser extension
-- **Talisman**: Popular wallet extension
-- **SubWallet**: Feature-rich wallet
-- **Nova Wallet**: Mobile wallet with browser bridge
 
 ## 🔐 Security Features
 
@@ -149,7 +176,7 @@ Sign this message to authenticate with Polkadot SSO
 
 URI: http://localhost:3000
 Version: 1
-Chain ID: kusama
+Chain ID: polkadot
 Nonce: a1b2c3d4e5f6...
 Issued At: 2025-01-24T18:30:00.000Z
 Expiration Time: 2025-01-24T18:35:00.000Z
@@ -161,11 +188,47 @@ Resources:
 
 ### Security Validations
 
-- **Nonce Verification**: Prevents replay attacks
-- **Domain Binding**: Ensures messages are for the correct domain
-- **Expiration Checking**: Prevents use of expired challenges
-- **Address Validation**: Validates Polkadot address format
-- **Request Tracking**: Unique request IDs for audit trails
+- ✅ **Nonce Verification** - Prevents replay attacks
+- ✅ **Domain Binding** - Ensures messages are for the correct domain
+- ✅ **Expiration Checking** - Prevents use of expired challenges
+- ✅ **Address Validation** - Validates Polkadot address format
+- ✅ **Request Tracking** - Unique request IDs for audit trails
+- ✅ **Rate Limiting** - Configurable rate limiting
+- ✅ **Audit Logging** - Comprehensive security audit trails
+
+## 💰 Remittance Services
+
+### Exchange Rate Service
+
+```typescript
+import { createExchangeRateService } from '@polkadot-auth/core';
+
+const exchangeService = createExchangeRateService({
+  provider: 'coingecko',
+  apiKey: 'your-api-key',
+  updateInterval: 60000, // 1 minute
+  supportedCurrencies: ['DOT', 'KSM', 'USD', 'EUR']
+});
+
+// Get current exchange rate
+const rate = await exchangeService.getExchangeRate('DOT', 'USD');
+console.log(`1 DOT = ${rate} USD`);
+```
+
+### Compliance Service
+
+```typescript
+import { ComplianceService } from '@polkadot-auth/core';
+
+const compliance = new ComplianceService({
+  enableSanctionsScreening: true,
+  enableKYC: true,
+  enableAML: true
+});
+
+// Check if address is compliant
+const isCompliant = await compliance.checkAddress(address);
+```
 
 ## 🔌 Extending
 
@@ -214,6 +277,16 @@ const customChain = {
   decimals: 12,
   symbol: 'MYT',
   isTestnet: false,
+  backupRpcUrls: [
+    'wss://backup1.my-parachain.com',
+    'wss://backup2.my-parachain.com'
+  ],
+  security: {
+    minConfirmationBlocks: 2,
+    maxRetries: 3,
+    timeout: 30000,
+    enableStrictValidation: true
+  }
 };
 
 const auth = createPolkadotAuth({
@@ -224,73 +297,144 @@ const auth = createPolkadotAuth({
 
 ## 📚 API Reference
 
-### createPolkadotAuth(config?)
+### Core Functions
+
+#### `createPolkadotAuth(config?)`
 
 Creates a new Polkadot Auth instance.
 
 **Parameters:**
-
-- `config` (optional): Configuration object
+- `config` (optional): `PolkadotAuthConfig` - Configuration object
 
 **Returns:** `PolkadotAuthInstance`
 
-### PolkadotAuthInstance Methods
+### Services
 
-#### createChallenge(clientId, userAddress?, chainId?)
+#### `authService`
+Core authentication service with user management.
 
-Creates a new authentication challenge.
+#### `walletProviderService`
+Wallet provider management and detection.
 
-**Parameters:**
+#### `createExchangeRateService(config)`
+Creates an exchange rate service instance.
 
-- `clientId`: Client identifier
-- `userAddress` (optional): User's address
-- `chainId` (optional): Chain identifier
+#### `ComplianceService`
+Compliance and regulatory checking service.
 
-**Returns:** `Promise<Challenge>`
+#### `configManager`
+Production configuration management.
 
-#### verifySignature(signature, challenge)
+### Types
 
-Verifies a signed message against a challenge.
+#### `PolkadotAuthConfig`
+Main configuration interface for the auth instance.
 
-**Parameters:**
+#### `ChainConfig`
+Chain configuration with security settings.
 
-- `signature`: SIWESignature object
-- `challenge`: Challenge object
+#### `WalletProvider`
+Standardized wallet provider interface.
 
-**Returns:** `Promise<AuthResult>`
+#### `Session`
+User session with JWT tokens and metadata.
 
-#### getProviders()
+#### `Challenge`
+Authentication challenge with SIWE message.
 
-Returns available wallet providers.
+## 🧪 Development
 
-**Returns:** `WalletProvider[]`
-
-#### getChains()
-
-Returns available chains.
-
-**Returns:** `ChainConfig[]`
-
-## 🧪 Testing
+### Building
 
 ```bash
-npm test
+# Clean build artifacts
+npm run clean
+
+# Build ESM and CommonJS
+npm run build
+
+# Watch mode for development
+npm run dev
 ```
 
-## 📄 License
+### Code Quality
 
-MIT License - see LICENSE file for details.
+```bash
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+
+# Type checking
+npm run type-check
+```
+
+### Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## 📦 Package Structure
+
+```
+@polkadot-auth/core/
+├── src/
+│   ├── auth/           # Authentication logic
+│   ├── chains/         # Chain management
+│   ├── config/         # Configuration management
+│   ├── contracts/      # Smart contract interfaces
+│   ├── providers/      # Wallet providers
+│   ├── services/       # Core services
+│   ├── types/          # TypeScript definitions
+│   ├── utils/          # Utility functions
+│   └── index.ts        # Main exports
+├── dist/               # ESM build output
+├── dist-cjs/           # CommonJS build output
+└── package.json
+```
+
+## 🔗 Related Packages
+
+This package is part of the Polkadot Authentication ecosystem:
+
+- **`@polkadot-auth/sso`** - SSO server implementation
+- **`@polkadot-auth/password-manager`** - Password management system
+- **`@polkadot-auth/express`** - Express.js adapter
+- **`@polkadot-auth/next`** - Next.js adapter
+- **`@polkadot-auth/ui`** - React UI components
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Add tests
-5. Submit a pull request
+4. Add tests for new functionality
+5. Ensure all tests pass (`npm test`)
+6. Format your code (`npm run format`)
+7. Commit your changes (`git commit -m 'Add amazing feature'`)
+8. Push to the branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
 
-## 🔗 Related Packages
+## 📄 License
 
-- `@polkadot-auth/express` - Express.js adapter
-- `@polkadot-auth/next` - Next.js adapter
-- `@polkadot-auth/ui` - React UI components
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- 📖 [Documentation](https://github.com/CoachCoe/polkadot-auth-shared)
+- 🐛 [Report Issues](https://github.com/CoachCoe/polkadot-auth-shared/issues)
+- 💬 [Discussions](https://github.com/CoachCoe/polkadot-auth-shared/discussions)
+
+## 🏷️ Version
+
+Current version: `0.1.0`
+
+---
+
+**Built with ❤️ for the Polkadot ecosystem**

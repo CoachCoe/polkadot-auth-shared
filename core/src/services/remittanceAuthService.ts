@@ -3,42 +3,62 @@ import {
   RemittanceConfig,
   RemittanceSession,
   RemittanceUser,
-} from '../types/remittance';
-import { AuthService } from './authService';
+} from "../types/remittance.js";
+import { AuthService } from "./authService.js";
 
 export class RemittanceAuthService extends AuthService {
   private custodyLevels: Record<number, CustodyLevelConfig> = {
     0: {
-      method: 'sms_email',
-      limits: { daily: 500, monthly: 2000, perTransaction: 500, currency: 'USD' },
-      requiredAuth: ['phone', 'email'],
-      description: 'Basic SMS/Email authentication with platform custody',
+      method: "sms_email",
+      limits: {
+        daily: 500,
+        monthly: 2000,
+        perTransaction: 500,
+        currency: "USD",
+      },
+      requiredAuth: ["phone", "email"],
+      description: "Basic SMS/Email authentication with platform custody",
     },
     1: {
-      method: 'enhanced_security',
-      limits: { daily: 2000, monthly: 10000, perTransaction: 2000, currency: 'USD' },
-      requiredAuth: ['phone', 'email', '2fa'],
-      description: 'Enhanced security with 2FA and shared custody',
+      method: "enhanced_security",
+      limits: {
+        daily: 2000,
+        monthly: 10000,
+        perTransaction: 2000,
+        currency: "USD",
+      },
+      requiredAuth: ["phone", "email", "2fa"],
+      description: "Enhanced security with 2FA and shared custody",
     },
     2: {
-      method: 'wallet_assisted',
-      limits: { daily: 10000, monthly: 50000, perTransaction: 10000, currency: 'USD' },
-      requiredAuth: ['wallet_signature', 'backup_method'],
-      description: 'Wallet-assisted with 2-of-3 multisig',
+      method: "wallet_assisted",
+      limits: {
+        daily: 10000,
+        monthly: 50000,
+        perTransaction: 10000,
+        currency: "USD",
+      },
+      requiredAuth: ["wallet_signature", "backup_method"],
+      description: "Wallet-assisted with 2-of-3 multisig",
     },
     3: {
-      method: 'self_custody',
+      method: "self_custody",
       limits: null, // No limits for full self-custody
-      requiredAuth: ['wallet_signature'],
-      description: 'Full self-custody with complete wallet control',
+      requiredAuth: ["wallet_signature"],
+      description: "Full self-custody with complete wallet control",
     },
   };
 
   private remittanceConfig: RemittanceConfig = {
     custodyLevels: this.custodyLevels,
-    supportedCurrencies: ['USD', 'ARS', 'BRL'],
-    supportedCorridors: ['US-AR', 'US-BR'],
-    defaultLimits: { daily: 500, monthly: 2000, perTransaction: 500, currency: 'USD' },
+    supportedCurrencies: ["USD", "ARS", "BRL"],
+    supportedCorridors: ["US-AR", "US-BR"],
+    defaultLimits: {
+      daily: 500,
+      monthly: 2000,
+      perTransaction: 500,
+      currency: "USD",
+    },
     feeStructure: {
       baseFee: 0.02, // 2% base fee
       custodyDiscount: 0.005, // 0.5% discount per level
@@ -53,26 +73,26 @@ export class RemittanceAuthService extends AuthService {
    */
   async createRemittanceSession(
     user: RemittanceUser,
-    custodyLevel: number = 0
+    custodyLevel: number = 0,
   ): Promise<RemittanceSession> {
     // Create base session using existing AuthService
     const baseSession = await this.createSession(
       user.address,
       user.id, // Using user ID as clientId for remittance
       {
-        domain: 'remittance.polkadot-sso.com',
+        domain: "remittance.polkadot-sso.com",
         address: user.address,
-        statement: 'Sign in to Polkadot Remittance',
-        uri: 'https://remittance.polkadot-sso.com',
-        version: '1',
-        chainId: 'polkadot',
+        statement: "Sign in to Polkadot Remittance",
+        uri: "https://remittance.polkadot-sso.com",
+        version: "1",
+        chainId: "polkadot",
         nonce: this.generateRemittanceNonce(),
         issuedAt: new Date().toISOString(),
-      }
+      },
     );
 
     if (!baseSession) {
-      throw new Error('Failed to create base session');
+      throw new Error("Failed to create base session");
     }
 
     // Extend with remittance-specific data
@@ -99,27 +119,29 @@ export class RemittanceAuthService extends AuthService {
     userId: string,
     currentLevel: number,
     targetLevel: number,
-    additionalAuth: any
+    additionalAuth: any,
   ): Promise<boolean> {
     if (targetLevel <= currentLevel) {
-      throw new Error('Target custody level must be higher than current level');
+      throw new Error("Target custody level must be higher than current level");
     }
 
     if (targetLevel > 3) {
-      throw new Error('Invalid custody level: maximum is 3');
+      throw new Error("Invalid custody level: maximum is 3");
     }
 
     const requirements = this.custodyLevels[targetLevel];
     const user = await this.getRemittanceUser(userId);
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Check if user meets requirements for target level
     for (const authMethod of requirements.requiredAuth) {
       if (!this.hasAuthMethod(user, authMethod)) {
-        throw new Error(`Missing required authentication method: ${authMethod}`);
+        throw new Error(
+          `Missing required authentication method: ${authMethod}`,
+        );
       }
     }
 
@@ -127,10 +149,16 @@ export class RemittanceAuthService extends AuthService {
     let verificationResult = false;
     switch (targetLevel) {
       case 1:
-        verificationResult = await this.verifyEnhancedSecurity(user, additionalAuth);
+        verificationResult = await this.verifyEnhancedSecurity(
+          user,
+          additionalAuth,
+        );
         break;
       case 2:
-        verificationResult = await this.verifyWalletAssisted(user, additionalAuth);
+        verificationResult = await this.verifyWalletAssisted(
+          user,
+          additionalAuth,
+        );
         break;
       case 3:
         verificationResult = await this.verifySelfCustody(user, additionalAuth);
@@ -151,7 +179,10 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Verify enhanced security requirements (Level 1)
    */
-  private async verifyEnhancedSecurity(user: RemittanceUser, auth: any): Promise<boolean> {
+  private async verifyEnhancedSecurity(
+    user: RemittanceUser,
+    auth: any,
+  ): Promise<boolean> {
     try {
       // Verify 2FA if provided
       if (auth.twoFactorCode) {
@@ -171,7 +202,7 @@ export class RemittanceAuthService extends AuthService {
 
       return true;
     } catch (error) {
-      console.error('Enhanced security verification failed:', error);
+      console.error("Enhanced security verification failed:", error);
       return false;
     }
   }
@@ -179,11 +210,14 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Verify wallet-assisted requirements (Level 2)
    */
-  private async verifyWalletAssisted(user: RemittanceUser, auth: any): Promise<boolean> {
+  private async verifyWalletAssisted(
+    user: RemittanceUser,
+    auth: any,
+  ): Promise<boolean> {
     try {
       // Verify wallet signature
       if (!auth.walletSignature || !auth.walletAddress) {
-        throw new Error('Wallet signature and address required');
+        throw new Error("Wallet signature and address required");
       }
 
       // Verify signature using existing AuthService
@@ -195,7 +229,7 @@ export class RemittanceAuthService extends AuthService {
           nonce: this.generateRemittanceNonce(),
         },
         {
-          id: 'upgrade-challenge',
+          id: "upgrade-challenge",
           message: `Upgrade to custody level 2 for ${user.id}`,
           clientId: user.id,
           nonce: this.generateRemittanceNonce(),
@@ -204,7 +238,7 @@ export class RemittanceAuthService extends AuthService {
           createdAt: Date.now(),
           expiresAtTimestamp: Date.now() + 300000,
           used: false,
-        }
+        },
       );
 
       if (!isValidSignature.success) {
@@ -219,7 +253,7 @@ export class RemittanceAuthService extends AuthService {
 
       return true;
     } catch (error) {
-      console.error('Wallet-assisted verification failed:', error);
+      console.error("Wallet-assisted verification failed:", error);
       return false;
     }
   }
@@ -227,11 +261,14 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Verify self-custody requirements (Level 3)
    */
-  private async verifySelfCustody(user: RemittanceUser, auth: any): Promise<boolean> {
+  private async verifySelfCustody(
+    user: RemittanceUser,
+    auth: any,
+  ): Promise<boolean> {
     try {
       // Verify wallet signature for full control
       if (!auth.walletSignature || !auth.walletAddress) {
-        throw new Error('Wallet signature and address required');
+        throw new Error("Wallet signature and address required");
       }
 
       // Verify signature using existing AuthService
@@ -243,7 +280,7 @@ export class RemittanceAuthService extends AuthService {
           nonce: this.generateRemittanceNonce(),
         },
         {
-          id: 'self-custody-challenge',
+          id: "self-custody-challenge",
           message: `Upgrade to full self-custody for ${user.id}`,
           clientId: user.id,
           nonce: this.generateRemittanceNonce(),
@@ -252,7 +289,7 @@ export class RemittanceAuthService extends AuthService {
           createdAt: Date.now(),
           expiresAtTimestamp: Date.now() + 300000,
           used: false,
-        }
+        },
       );
 
       if (!isValidSignature.success) {
@@ -267,7 +304,7 @@ export class RemittanceAuthService extends AuthService {
 
       return true;
     } catch (error) {
-      console.error('Self-custody verification failed:', error);
+      console.error("Self-custody verification failed:", error);
       return false;
     }
   }
@@ -277,16 +314,18 @@ export class RemittanceAuthService extends AuthService {
    */
   private hasAuthMethod(user: RemittanceUser, method: string): boolean {
     switch (method) {
-      case 'phone':
+      case "phone":
         return !!user.phone;
-      case 'email':
+      case "email":
         return !!user.email;
-      case '2fa':
-        return user.recoveryMethods.some(rm => rm.type === 'backup_questions' && rm.verified);
-      case 'wallet_signature':
+      case "2fa":
+        return user.recoveryMethods.some(
+          (rm) => rm.type === "backup_questions" && rm.verified,
+        );
+      case "wallet_signature":
         return Object.keys(user.walletAddresses).length > 0;
-      case 'backup_method':
-        return user.recoveryMethods.some(rm => rm.verified);
+      case "backup_method":
+        return user.recoveryMethods.some((rm) => rm.verified);
       default:
         return false;
     }
@@ -300,20 +339,20 @@ export class RemittanceAuthService extends AuthService {
     // For now, return a mock implementation
     return {
       id: userId,
-      address: 'mock-address',
-      name: 'Mock User',
-      email: 'user@example.com',
-      phone: '+1234567890',
+      address: "mock-address",
+      name: "Mock User",
+      email: "user@example.com",
+      phone: "+1234567890",
       createdAt: new Date(),
       lastLogin: new Date(),
       isActive: true,
       custodyLevel: 0,
-      kycStatus: 'pending',
+      kycStatus: "pending",
       limits: this.custodyLevels[0]?.limits || {
         daily: 500,
         monthly: 2000,
         perTransaction: 500,
-        currency: 'USD',
+        currency: "USD",
       },
       walletAddresses: {},
       recoveryMethods: [],
@@ -324,7 +363,10 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Update user's custody level
    */
-  private async updateUserCustodyLevel(userId: string, level: number): Promise<void> {
+  private async updateUserCustodyLevel(
+    userId: string,
+    level: number,
+  ): Promise<void> {
     // This would update the user record in your database
     console.log(`Updating user ${userId} to custody level ${level}`);
   }
@@ -332,7 +374,10 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Update user's security level
    */
-  private async updateUserSecurityLevel(userId: string, level: number): Promise<void> {
+  private async updateUserSecurityLevel(
+    userId: string,
+    level: number,
+  ): Promise<void> {
     // This would update security settings in your database
     console.log(`Updating user ${userId} security level to ${level}`);
   }
@@ -340,7 +385,10 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Add recovery questions for user
    */
-  private async addRecoveryQuestions(userId: string, questions: any): Promise<void> {
+  private async addRecoveryQuestions(
+    userId: string,
+    questions: any,
+  ): Promise<void> {
     // This would store recovery questions in your database
     console.log(`Adding recovery questions for user ${userId}`);
   }
@@ -357,17 +405,27 @@ export class RemittanceAuthService extends AuthService {
   /**
    * Setup multisig wallet
    */
-  private async setupMultisigWallet(userId: string, walletAddress: string): Promise<void> {
+  private async setupMultisigWallet(
+    userId: string,
+    walletAddress: string,
+  ): Promise<void> {
     // This would create a multisig wallet on the blockchain
-    console.log(`Setting up multisig wallet for user ${userId} with address ${walletAddress}`);
+    console.log(
+      `Setting up multisig wallet for user ${userId} with address ${walletAddress}`,
+    );
   }
 
   /**
    * Transfer to self-custody
    */
-  private async transferToSelfCustody(userId: string, walletAddress: string): Promise<void> {
+  private async transferToSelfCustody(
+    userId: string,
+    walletAddress: string,
+  ): Promise<void> {
     // This would transfer full control to the user's wallet
-    console.log(`Transferring to self-custody for user ${userId} with address ${walletAddress}`);
+    console.log(
+      `Transferring to self-custody for user ${userId} with address ${walletAddress}`,
+    );
   }
 
   /**
@@ -375,7 +433,8 @@ export class RemittanceAuthService extends AuthService {
    */
   private generateRemittanceNonce(): string {
     return (
-      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
     );
   }
 
@@ -397,7 +456,8 @@ export class RemittanceAuthService extends AuthService {
    * Calculate fees based on custody level
    */
   calculateFees(amount: number, custodyLevel: number): number {
-    const { baseFee, custodyDiscount, minFee } = this.remittanceConfig.feeStructure;
+    const { baseFee, custodyDiscount, minFee } =
+      this.remittanceConfig.feeStructure;
     const discount = custodyLevel * custodyDiscount;
     const finalFee = Math.max(baseFee - discount, minFee);
     return amount * finalFee;

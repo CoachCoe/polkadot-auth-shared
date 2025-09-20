@@ -56,13 +56,13 @@ export interface WalletAccount {
 }
 
 export interface SessionConfig {
-  strategy?: 'jwt' | 'database';
+  strategy?: "jwt" | "database";
   maxAge?: number;
   databaseUrl?: string;
 }
 
 export interface DatabaseConfig {
-  type: 'sqlite' | 'postgres' | 'mysql' | 'mongodb';
+  type: "sqlite" | "postgres" | "mysql" | "mongodb";
   url?: string;
   adapter?: DatabaseAdapter;
 }
@@ -156,12 +156,18 @@ export interface SIWESignature {
 
 export interface PolkadotAuthInstance {
   config: PolkadotAuthConfig;
-  createChallenge: (clientId: string, userAddress?: string) => Promise<Challenge>;
-  verifySignature: (signature: SIWESignature, challenge: Challenge) => Promise<AuthResult>;
+  createChallenge: (
+    clientId: string,
+    userAddress?: string,
+  ) => Promise<Challenge>;
+  verifySignature: (
+    signature: SIWESignature,
+    challenge: Challenge,
+  ) => Promise<AuthResult>;
   createSession: (
     address: string,
     clientId: string,
-    parsedMessage: SIWEMessage
+    parsedMessage: SIWEMessage,
   ) => Promise<Session>;
   getSession: (accessToken: string) => Promise<Session | null>;
   refreshSession: (refreshToken: string) => Promise<Session | null>;
@@ -196,4 +202,4 @@ export interface PolkadotSession {
 }
 
 // Export remittance types
-export * from './remittance';
+export * from "./remittance.js";
