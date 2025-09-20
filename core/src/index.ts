@@ -1,6 +1,6 @@
-import { SIWEAuthService } from './auth/siwe';
-import { DEFAULT_CHAINS } from './chains';
-import { getProviderById } from './providers';
+import { SIWEAuthService } from './auth/siwe.js';
+import { DEFAULT_CHAINS } from './chains/index.js';
+import { getProviderById } from './providers/index.js';
 import {
   AuthResult,
   ChainConfig,
@@ -11,8 +11,8 @@ import {
   SIWEMessage,
   SIWESignature,
   WalletProvider,
-} from './types';
-import { randomBytes, randomUUID } from './utils/crypto';
+} from './types/index.js';
+import { randomBytes, randomUUID } from './utils/crypto.js';
 
 export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAuthInstance {
   const finalConfig: PolkadotAuthConfig = {
@@ -125,7 +125,7 @@ export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAut
   };
 }
 
-export * from './types';
+export * from './types/index.js';
 
 export {
   createCustomProvider,
@@ -136,7 +136,7 @@ export {
   polkadotJsProvider,
   subWalletProvider,
   talismanProvider,
-} from './providers';
+} from './providers/index.js';
 
 export {
   DEFAULT_CHAINS,
@@ -147,25 +147,25 @@ export {
   getSecureChainConfig,
   getTestnetChains,
   validateChainConfig,
-} from './chains';
+} from './chains/index.js';
 
-export { SIWEAuthService } from './auth/siwe';
+export { SIWEAuthService } from './auth/siwe.js';
 
-export { AuthService, authService } from './services/authService';
-export { ErrorService } from './services/errorService';
-export { createPapiClient, PapiClientService } from './services/papiClient';
-export { WalletProviderService, walletProviderService } from './services/walletProviderService';
+export { AuthService, authService } from './services/authService.js';
+export { ErrorService } from './services/errorService.js';
+export { createPapiClient, PapiClientService } from './services/papiClient.js';
+export { WalletProviderService, walletProviderService } from './services/walletProviderService.js';
 
 // Remittance services
-export { ComplianceService } from './services/complianceService';
+export { ComplianceService } from './services/complianceService.js';
 export {
   createExchangeRateService,
   DEFAULT_EXCHANGE_RATE_CONFIG,
   ExchangeRateService,
-} from './services/exchangeRateService';
-export type { ExchangeRateConfig, ExchangeRateProvider } from './services/exchangeRateService';
-export { RemittanceAuthService } from './services/remittanceAuthService';
-export { RemittanceService } from './services/remittanceService';
+} from './services/exchangeRateService.js';
+export type { ExchangeRateConfig, ExchangeRateProvider } from './services/exchangeRateService.js';
+export { RemittanceAuthService } from './services/remittanceAuthService.js';
+export { RemittanceService } from './services/remittanceService.js';
 
 // Configuration
 export {
@@ -173,7 +173,7 @@ export {
   configManager,
   getConfig,
   validateConfig,
-} from './config/productionConfig';
+} from './config/productionConfig.js';
 export type {
   ProductionConfig,
   SecurityConfig,
@@ -181,6 +181,6 @@ export type {
   RemittanceConfig,
   ChainConfig,
   LoggingConfig,
-} from './config/productionConfig';
+} from './config/productionConfig.js';
 
 export default createPolkadotAuth;

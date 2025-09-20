@@ -1,14 +1,14 @@
-import { PolkadotSession, PolkadotUser } from './index';
+import { PolkadotSession, PolkadotUser } from "./index";
 
 export interface TransactionLimits {
   daily: number;
   monthly: number;
   perTransaction: number;
-  currency: 'USD';
+  currency: "USD";
 }
 
 export interface RecoveryMethod {
-  type: 'email' | 'sms' | 'wallet' | 'backup_questions';
+  type: "email" | "sms" | "wallet" | "backup_questions";
   value: string;
   verified: boolean;
   createdAt: Date;
@@ -16,7 +16,7 @@ export interface RecoveryMethod {
 
 export interface RemittanceUser extends PolkadotUser {
   custodyLevel: 0 | 1 | 2 | 3;
-  kycStatus: 'pending' | 'verified' | 'rejected';
+  kycStatus: "pending" | "verified" | "rejected";
   limits: TransactionLimits;
   walletAddresses: Record<string, string>; // chain -> address
   recoveryMethods: RecoveryMethod[];
@@ -38,9 +38,9 @@ export interface RemittanceTransaction {
   recipientContact: string; // phone/email
   recipientId?: string; // if claimed
   amount: number;
-  currency: 'USD';
-  targetCurrency: 'ARS' | 'BRL' | 'USD';
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'expired';
+  currency: "USD";
+  targetCurrency: "ARS" | "BRL" | "USD";
+  status: "pending" | "processing" | "completed" | "failed" | "expired";
   claimLink: string;
   expiresAt: Date;
   fees: FeeBreakdown;
@@ -65,7 +65,7 @@ export interface CustodyLevelConfig {
 }
 
 export interface KYCResult {
-  status: 'pending' | 'verified' | 'rejected';
+  status: "pending" | "verified" | "rejected";
   riskScore: number;
   requiredActions: string[];
   expiresAt: Date;
@@ -75,7 +75,7 @@ export interface ClaimResult {
   success: boolean;
   amount: number;
   currency: string;
-  method: 'cash' | 'bank' | 'wallet';
+  method: "cash" | "bank" | "wallet";
   reference?: string;
 }
 
@@ -99,7 +99,7 @@ export interface CustodyUpgrade {
   userId: string;
   fromLevel: number;
   toLevel: number;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  status: "pending" | "in_progress" | "completed" | "failed";
   requiredAuth: any;
   completedAuth: any;
   createdAt: Date;

@@ -1,20 +1,20 @@
-import { ChainConfig } from '../types';
+import { ChainConfig } from "../types/index.js";
 
 // Security-focused chain configuration with multiple RPC endpoints for redundancy
 export const DEFAULT_CHAINS: ChainConfig[] = [
   {
-    id: 'polkadot',
-    name: 'Polkadot',
-    rpcUrl: 'wss://rpc.polkadot.io',
+    id: "polkadot",
+    name: "Polkadot",
+    rpcUrl: "wss://rpc.polkadot.io",
     ss58Format: 0,
     decimals: 10,
-    symbol: 'DOT',
+    symbol: "DOT",
     isTestnet: false,
     // Security: Multiple RPC endpoints for redundancy and failover
     backupRpcUrls: [
-      'wss://polkadot.api.onfinality.io/public-ws',
-      'wss://polkadot-rpc.dwellir.com',
-      'wss://rpc-polkadot.luckyfriday.io',
+      "wss://polkadot.api.onfinality.io/public-ws",
+      "wss://polkadot-rpc.dwellir.com",
+      "wss://rpc-polkadot.luckyfriday.io",
     ],
     // Security: Chain-specific security settings
     security: {
@@ -25,17 +25,17 @@ export const DEFAULT_CHAINS: ChainConfig[] = [
     },
   },
   {
-    id: 'kusama',
-    name: 'Kusama',
-    rpcUrl: 'wss://kusama-rpc.polkadot.io',
+    id: "kusama",
+    name: "Kusama",
+    rpcUrl: "wss://kusama-rpc.polkadot.io",
     ss58Format: 2,
     decimals: 12,
-    symbol: 'KSM',
+    symbol: "KSM",
     isTestnet: false,
     backupRpcUrls: [
-      'wss://kusama.api.onfinality.io/public-ws',
-      'wss://kusama-rpc.dwellir.com',
-      'wss://rpc-kusama.luckyfriday.io',
+      "wss://kusama.api.onfinality.io/public-ws",
+      "wss://kusama-rpc.dwellir.com",
+      "wss://rpc-kusama.luckyfriday.io",
     ],
     security: {
       minConfirmationBlocks: 1,
@@ -45,14 +45,17 @@ export const DEFAULT_CHAINS: ChainConfig[] = [
     },
   },
   {
-    id: 'westend',
-    name: 'Westend',
-    rpcUrl: 'wss://westend-rpc.polkadot.io',
+    id: "westend",
+    name: "Westend",
+    rpcUrl: "wss://westend-rpc.polkadot.io",
     ss58Format: 42,
     decimals: 12,
-    symbol: 'WND',
+    symbol: "WND",
     isTestnet: true,
-    backupRpcUrls: ['wss://westend.api.onfinality.io/public-ws', 'wss://westend-rpc.dwellir.com'],
+    backupRpcUrls: [
+      "wss://westend.api.onfinality.io/public-ws",
+      "wss://westend-rpc.dwellir.com",
+    ],
     security: {
       minConfirmationBlocks: 1,
       maxRetries: 3,
@@ -61,14 +64,14 @@ export const DEFAULT_CHAINS: ChainConfig[] = [
     },
   },
   {
-    id: 'rococo',
-    name: 'Rococo',
-    rpcUrl: 'wss://rococo-rpc.polkadot.io',
+    id: "rococo",
+    name: "Rococo",
+    rpcUrl: "wss://rococo-rpc.polkadot.io",
     ss58Format: 42,
     decimals: 12,
-    symbol: 'ROC',
+    symbol: "ROC",
     isTestnet: true,
-    backupRpcUrls: ['wss://rococo.api.onfinality.io/public-ws'],
+    backupRpcUrls: ["wss://rococo.api.onfinality.io/public-ws"],
     security: {
       minConfirmationBlocks: 1,
       maxRetries: 3,
@@ -79,7 +82,7 @@ export const DEFAULT_CHAINS: ChainConfig[] = [
 ];
 
 export function getChainById(id: string): ChainConfig | undefined {
-  return DEFAULT_CHAINS.find(chain => chain.id === id);
+  return DEFAULT_CHAINS.find((chain) => chain.id === id);
 }
 
 export function getDefaultChain(): ChainConfig {
@@ -87,24 +90,24 @@ export function getDefaultChain(): ChainConfig {
 }
 
 export function getTestnetChains(): ChainConfig[] {
-  return DEFAULT_CHAINS.filter(chain => chain.isTestnet);
+  return DEFAULT_CHAINS.filter((chain) => chain.isTestnet);
 }
 
 export function getMainnetChains(): ChainConfig[] {
-  return DEFAULT_CHAINS.filter(chain => !chain.isTestnet);
+  return DEFAULT_CHAINS.filter((chain) => !chain.isTestnet);
 }
 
 // Security-focused utility functions
 export function validateChainConfig(chain: ChainConfig): boolean {
   // Security: Validate RPC URL format
-  if (!chain.rpcUrl || !chain.rpcUrl.startsWith('wss://')) {
+  if (!chain.rpcUrl || !chain.rpcUrl.startsWith("wss://")) {
     return false;
   }
 
   // Security: Validate backup RPC URLs if provided
   if (chain.backupRpcUrls) {
     for (const url of chain.backupRpcUrls) {
-      if (!url.startsWith('wss://')) {
+      if (!url.startsWith("wss://")) {
         return false;
       }
     }

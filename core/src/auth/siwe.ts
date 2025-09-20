@@ -1,12 +1,19 @@
-import { getChainById } from '../chains';
-import { AuthResult, ChainConfig, Challenge, SIWEMessage, SIWESignature } from '../types';
-import { randomBytes, randomUUID } from '../utils/crypto';
+import { getChainById } from "../chains/index.js";
+import {
+  AuthResult,
+  ChainConfig,
+  Challenge,
+  SIWEMessage,
+  SIWESignature,
+} from "../types/index.js";
+import { randomBytes, randomUUID } from "../utils/crypto.js";
 
 export class SIWEAuthService {
   private defaultChain: ChainConfig;
 
-  constructor(defaultChainId: string = 'polkadot') {
-    this.defaultChain = getChainById(defaultChainId) || getChainById('polkadot')!;
+  constructor(defaultChainId: string = "polkadot") {
+    this.defaultChain =
+      getChainById(defaultChainId) || getChainById("polkadot")!;
   }
 
   generateSIWEMessage(params: {
@@ -26,9 +33,9 @@ export class SIWEAuthService {
     const {
       domain,
       address,
-      statement = 'Sign this message to authenticate with Polkadot SSO',
+      statement = "Sign this message to authenticate with Polkadot SSO",
       uri,
-      version = '1',
+      version = "1",
       chainId,
       nonce,
       issuedAt,
@@ -65,7 +72,7 @@ export class SIWEAuthService {
 
     if (resources && resources.length > 0) {
       message += `\nResources:`;
-      resources.forEach(resource => {
+      resources.forEach((resource) => {
         message += `\n- ${resource}`;
       });
     }
@@ -75,14 +82,14 @@ export class SIWEAuthService {
 
   parseSIWEMessage(message: string): SIWEMessage | null {
     try {
-      const lines = message.split('\n');
+      const lines = message.split("\n");
       const parsed: Partial<SIWEMessage> = {};
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
 
-        if (line.includes('wants you to sign in with your Polkadot account:')) {
-          parsed.domain = line.split(' wants you to sign in')[0];
+        if (line.includes("wants you to sign in with your Polkadot account:")) {
+          parsed.domain = line.split(" wants you to sign in")[0];
           // Next line should be the address
           if (i + 1 < lines.length) {
             const addressLine = lines[i + 1].trim();
@@ -90,31 +97,39 @@ export class SIWEAuthService {
               parsed.address = addressLine;
             }
           }
-        } else if (line.startsWith('URI: ')) {
+        } else if (line.startsWith("URI: ")) {
           parsed.uri = line.substring(5);
-        } else if (line.startsWith('Version: ')) {
+        } else if (line.startsWith("Version: ")) {
           parsed.version = line.substring(9);
-        } else if (line.startsWith('Chain ID: ')) {
+        } else if (line.startsWith("Chain ID: ")) {
           parsed.chainId = line.substring(10);
-        } else if (line.startsWith('Nonce: ')) {
+        } else if (line.startsWith("Nonce: ")) {
           parsed.nonce = line.substring(7);
-        } else if (line.startsWith('Issued At: ')) {
+        } else if (line.startsWith("Issued At: ")) {
           parsed.issuedAt = line.substring(11);
-        } else if (line.startsWith('Expiration Time: ')) {
+        } else if (line.startsWith("Expiration Time: ")) {
           parsed.expirationTime = line.substring(17);
-        } else if (line.startsWith('Not Before: ')) {
+        } else if (line.startsWith("Not Before: ")) {
           parsed.notBefore = line.substring(12);
-        } else if (line.startsWith('Request ID: ')) {
+        } else if (line.startsWith("Request ID: ")) {
           parsed.requestId = line.substring(12);
         }
       }
 
-      const addressIndex = lines.findIndex(line => this.isValidPolkadotAddress(line.trim()));
-      const uriIndex = lines.findIndex(line => line.startsWith('URI: '));
-      if (addressIndex !== -1 && uriIndex !== -1 && uriIndex > addressIndex + 1) {
-        const statementLines = lines.slice(addressIndex + 1, uriIndex).filter(line => line.trim());
+      const addressIndex = lines.findIndex((line) =>
+        this.isValidPolkadotAddress(line.trim()),
+      );
+      const uriIndex = lines.findIndex((line) => line.startsWith("URI: "));
+      if (
+        addressIndex !== -1 &&
+        uriIndex !== -1 &&
+        uriIndex > addressIndex + 1
+      ) {
+        const statementLines = lines
+          .slice(addressIndex + 1, uriIndex)
+          .filter((line) => line.trim());
         if (statementLines.length > 0) {
-          parsed.statement = statementLines.join('\n');
+          parsed.statement = statementLines.join("\n");
         }
       }
 
@@ -132,22 +147,22 @@ export class SIWEAuthService {
 
       return parsed as SIWEMessage;
     } catch (error) {
-      console.error('Error parsing SIWE message:', error);
+      console.error("Error parsing SIWE message:", error);
       return null;
     }
   }
 
   validateSIWEMessage(message: string): boolean {
     const requiredFields = [
-      'wants you to sign in with your Polkadot account:',
-      'URI:',
-      'Version:',
-      'Chain ID:',
-      'Nonce:',
-      'Issued At:',
+      "wants you to sign in with your Polkadot account:",
+      "URI:",
+      "Version:",
+      "Chain ID:",
+      "Nonce:",
+      "Issued At:",
     ];
 
-    return requiredFields.every(field => message.includes(field));
+    return requiredFields.every((field) => message.includes(field));
   }
 
   isValidPolkadotAddress(address: string): boolean {
@@ -157,17 +172,20 @@ export class SIWEAuthService {
 
   generateNonce(): string {
     return Array.from(randomBytes(32))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
-  async verifySIWESignature(signature: SIWESignature, challenge: Challenge): Promise<AuthResult> {
+  async verifySIWESignature(
+    signature: SIWESignature,
+    challenge: Challenge,
+  ): Promise<AuthResult> {
     try {
       if (!this.validateSIWEMessage(signature.message)) {
         return {
           success: false,
-          error: 'Invalid SIWE message format',
-          errorCode: 'INVALID_MESSAGE_FORMAT',
+          error: "Invalid SIWE message format",
+          errorCode: "INVALID_MESSAGE_FORMAT",
         };
       }
 
@@ -175,24 +193,24 @@ export class SIWEAuthService {
       if (!parsedMessage) {
         return {
           success: false,
-          error: 'Failed to parse SIWE message',
-          errorCode: 'MESSAGE_PARSE_ERROR',
+          error: "Failed to parse SIWE message",
+          errorCode: "MESSAGE_PARSE_ERROR",
         };
       }
 
       if (parsedMessage.nonce !== challenge.nonce) {
         return {
           success: false,
-          error: 'Nonce mismatch',
-          errorCode: 'NONCE_MISMATCH',
+          error: "Nonce mismatch",
+          errorCode: "NONCE_MISMATCH",
         };
       }
 
       if (!this.isValidPolkadotAddress(parsedMessage.address)) {
         return {
           success: false,
-          error: 'Invalid Polkadot address format',
-          errorCode: 'INVALID_ADDRESS',
+          error: "Invalid Polkadot address format",
+          errorCode: "INVALID_ADDRESS",
         };
       }
 
@@ -201,8 +219,8 @@ export class SIWEAuthService {
         if (expirationTime < new Date()) {
           return {
             success: false,
-            error: 'Message has expired',
-            errorCode: 'MESSAGE_EXPIRED',
+            error: "Message has expired",
+            errorCode: "MESSAGE_EXPIRED",
           };
         }
       }
@@ -211,8 +229,8 @@ export class SIWEAuthService {
       if (issuedAt > new Date()) {
         return {
           success: false,
-          error: 'Message issued time is in the future',
-          errorCode: 'FUTURE_ISSUED_TIME',
+          error: "Message issued time is in the future",
+          errorCode: "FUTURE_ISSUED_TIME",
         };
       }
 
@@ -221,8 +239,8 @@ export class SIWEAuthService {
         if (notBefore > new Date()) {
           return {
             success: false,
-            error: 'Message not yet valid',
-            errorCode: 'MESSAGE_NOT_VALID_YET',
+            error: "Message not yet valid",
+            errorCode: "MESSAGE_NOT_VALID_YET",
           };
         }
       }
@@ -231,35 +249,39 @@ export class SIWEAuthService {
         success: true,
       };
     } catch (error) {
-      console.error('Error verifying SIWE signature:', error);
+      console.error("Error verifying SIWE signature:", error);
       return {
         success: false,
-        error: 'Signature verification failed',
-        errorCode: 'VERIFICATION_ERROR',
+        error: "Signature verification failed",
+        errorCode: "VERIFICATION_ERROR",
       };
     }
   }
 
-  createChallenge(clientId: string, userAddress?: string, chainId?: string): Challenge {
+  createChallenge(
+    clientId: string,
+    userAddress?: string,
+    chainId?: string,
+  ): Challenge {
     const nonce = this.generateNonce();
     const issuedAt = new Date().toISOString();
     const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
     const chain = chainId ? getChainById(chainId) : this.defaultChain;
 
     const message = this.generateSIWEMessage({
-      domain: 'polkadot-auth.localhost',
-      address: userAddress || '0x...', // Will be replaced with actual address
-      statement: 'Sign this message to authenticate with Polkadot SSO',
-      uri: 'http://localhost:3000',
-      version: '1',
-      chainId: chain?.id || 'polkadot',
+      domain: "polkadot-auth.localhost",
+      address: userAddress || "0x...", // Will be replaced with actual address
+      statement: "Sign this message to authenticate with Polkadot SSO",
+      uri: "http://localhost:3000",
+      version: "1",
+      chainId: chain?.id || "polkadot",
       nonce,
       issuedAt,
       expirationTime,
       requestId: randomUUID(),
       resources: [
-        'https://polkadot-auth.localhost/credentials',
-        'https://polkadot-auth.localhost/profile',
+        "https://polkadot-auth.localhost/credentials",
+        "https://polkadot-auth.localhost/profile",
       ],
     });
 

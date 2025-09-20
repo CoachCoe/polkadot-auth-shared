@@ -8,16 +8,22 @@ export interface Logger {
 export function createLogger(service: string): Logger {
   return {
     info: (message: string, meta?: any) => {
-      console.log(`[${service}] ${message}`, meta ? JSON.stringify(meta) : '');
+      console.log(`[${service}] ${message}`, meta ? JSON.stringify(meta) : "");
     },
     error: (message: string, meta?: any) => {
-      console.error(`[${service}] ${message}`, meta ? JSON.stringify(meta) : '');
+      console.error(
+        `[${service}] ${message}`,
+        meta ? JSON.stringify(meta) : "",
+      );
     },
     warn: (message: string, meta?: any) => {
-      console.warn(`[${service}] ${message}`, meta ? JSON.stringify(meta) : '');
+      console.warn(`[${service}] ${message}`, meta ? JSON.stringify(meta) : "");
     },
     debug: (message: string, meta?: any) => {
-      console.debug(`[${service}] ${message}`, meta ? JSON.stringify(meta) : '');
+      console.debug(
+        `[${service}] ${message}`,
+        meta ? JSON.stringify(meta) : "",
+      );
     },
   };
 }

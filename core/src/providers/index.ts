@@ -1,4 +1,4 @@
-import { WalletConnection, WalletProvider } from '../types';
+import { WalletConnection, WalletProvider } from "../types/index.js";
 
 declare global {
   interface Window {
@@ -9,7 +9,7 @@ declare global {
 }
 
 function isBrowser(): boolean {
-  return typeof window !== 'undefined';
+  return typeof window !== "undefined";
 }
 
 function getInjectedWeb3(): any {
@@ -21,42 +21,49 @@ async function getAvailableExtensions(): Promise<string[]> {
   if (!isBrowser()) return [];
 
   try {
-    const { web3Enable } = await import('@polkadot/extension-dapp');
-    const extensions = await web3Enable('Polkadot Auth');
-    return extensions.map(ext => ext.name.toLowerCase());
+    const { web3Enable } = await import("@polkadot/extension-dapp");
+    const extensions = await web3Enable("Polkadot Auth");
+    return extensions.map((ext) => ext.name.toLowerCase());
   } catch (error) {
-    console.warn('Failed to detect extensions:', error);
+    console.warn("Failed to detect extensions:", error);
     return [];
   }
 }
 
 export const polkadotJsProvider: WalletProvider = {
-  id: 'polkadot-js',
-  name: 'Polkadot.js Extension',
-  description: 'Official Polkadot browser extension',
-  icon: 'https://polkadot.js.org/extension/assets/logo.svg',
+  id: "polkadot-js",
+  name: "Polkadot.js Extension",
+  description: "Official Polkadot browser extension",
+  icon: "https://polkadot.js.org/extension/assets/logo.svg",
 
   isAvailable: async () => {
     const extensions = await getAvailableExtensions();
     return extensions.some(
-      name => name.includes('polkadot') || name.includes('js') || name.includes('extension')
+      (name) =>
+        name.includes("polkadot") ||
+        name.includes("js") ||
+        name.includes("extension"),
     );
   },
 
   connect: async (): Promise<WalletConnection> => {
     if (!isBrowser()) {
-      throw new Error('Polkadot.js Extension is only available in browser environment');
+      throw new Error(
+        "Polkadot.js Extension is only available in browser environment",
+      );
     }
 
-    const { web3Enable, web3Accounts, web3FromAddress } = await import('@polkadot/extension-dapp');
+    const { web3Enable, web3Accounts, web3FromAddress } = await import(
+      "@polkadot/extension-dapp"
+    );
 
-    await web3Enable('Polkadot Auth');
+    await web3Enable("Polkadot Auth");
 
     const accounts = await web3Accounts();
 
     return {
       provider: polkadotJsProvider,
-      accounts: accounts.map(account => ({
+      accounts: accounts.map((account) => ({
         address: account.address,
         name: account.meta.name,
         type: account.type,
@@ -66,18 +73,18 @@ export const polkadotJsProvider: WalletProvider = {
 
       signMessage: async (message: string): Promise<string> => {
         if (accounts.length === 0) {
-          throw new Error('No accounts available');
+          throw new Error("No accounts available");
         }
 
         const account = accounts[0];
         const injector = await web3FromAddress(account.address);
 
         if (!injector.signer.signRaw) {
-          throw new Error('Signer does not support raw signing');
+          throw new Error("Signer does not support raw signing");
         }
 
         const signResult = await injector.signer.signRaw({
-          type: 'bytes',
+          type: "bytes",
           data: message,
           address: account.address,
         });
@@ -91,30 +98,32 @@ export const polkadotJsProvider: WalletProvider = {
 };
 
 export const talismanProvider: WalletProvider = {
-  id: 'talisman',
-  name: 'Talisman',
-  description: 'Talisman wallet extension',
-  icon: 'https://talisman.xyz/favicon.ico',
+  id: "talisman",
+  name: "Talisman",
+  description: "Talisman wallet extension",
+  icon: "https://talisman.xyz/favicon.ico",
 
   isAvailable: async () => {
     const extensions = await getAvailableExtensions();
-    return extensions.some(name => name.includes('talisman'));
+    return extensions.some((name) => name.includes("talisman"));
   },
 
   connect: async (): Promise<WalletConnection> => {
     if (!isBrowser()) {
-      throw new Error('Talisman is only available in browser environment');
+      throw new Error("Talisman is only available in browser environment");
     }
 
-    const { web3Enable, web3Accounts, web3FromAddress } = await import('@polkadot/extension-dapp');
+    const { web3Enable, web3Accounts, web3FromAddress } = await import(
+      "@polkadot/extension-dapp"
+    );
 
-    await web3Enable('Polkadot Auth');
+    await web3Enable("Polkadot Auth");
 
     const accounts = await web3Accounts();
 
     return {
       provider: talismanProvider,
-      accounts: accounts.map(account => ({
+      accounts: accounts.map((account) => ({
         address: account.address,
         name: account.meta.name,
         type: account.type,
@@ -124,18 +133,18 @@ export const talismanProvider: WalletProvider = {
 
       signMessage: async (message: string): Promise<string> => {
         if (accounts.length === 0) {
-          throw new Error('No accounts available');
+          throw new Error("No accounts available");
         }
 
         const account = accounts[0];
         const injector = await web3FromAddress(account.address);
 
         if (!injector.signer.signRaw) {
-          throw new Error('Signer does not support raw signing');
+          throw new Error("Signer does not support raw signing");
         }
 
         const signResult = await injector.signer.signRaw({
-          type: 'bytes',
+          type: "bytes",
           data: message,
           address: account.address,
         });
@@ -149,30 +158,34 @@ export const talismanProvider: WalletProvider = {
 };
 
 export const subWalletProvider: WalletProvider = {
-  id: 'subwallet',
-  name: 'SubWallet',
-  description: 'SubWallet extension',
-  icon: 'https://subwallet.app/favicon.ico',
+  id: "subwallet",
+  name: "SubWallet",
+  description: "SubWallet extension",
+  icon: "https://subwallet.app/favicon.ico",
 
   isAvailable: async () => {
     const extensions = await getAvailableExtensions();
-    return extensions.some(name => name.includes('subwallet') || name.includes('sub'));
+    return extensions.some(
+      (name) => name.includes("subwallet") || name.includes("sub"),
+    );
   },
 
   connect: async (): Promise<WalletConnection> => {
     if (!isBrowser()) {
-      throw new Error('SubWallet is only available in browser environment');
+      throw new Error("SubWallet is only available in browser environment");
     }
 
-    const { web3Enable, web3Accounts, web3FromAddress } = await import('@polkadot/extension-dapp');
+    const { web3Enable, web3Accounts, web3FromAddress } = await import(
+      "@polkadot/extension-dapp"
+    );
 
-    await web3Enable('Polkadot Auth');
+    await web3Enable("Polkadot Auth");
 
     const accounts = await web3Accounts();
 
     return {
       provider: subWalletProvider,
-      accounts: accounts.map(account => ({
+      accounts: accounts.map((account) => ({
         address: account.address,
         name: account.meta.name,
         type: account.type,
@@ -182,18 +195,18 @@ export const subWalletProvider: WalletProvider = {
 
       signMessage: async (message: string): Promise<string> => {
         if (accounts.length === 0) {
-          throw new Error('No accounts available');
+          throw new Error("No accounts available");
         }
 
         const account = accounts[0];
         const injector = await web3FromAddress(account.address);
 
         if (!injector.signer.signRaw) {
-          throw new Error('Signer does not support raw signing');
+          throw new Error("Signer does not support raw signing");
         }
 
         const signResult = await injector.signer.signRaw({
-          type: 'bytes',
+          type: "bytes",
           data: message,
           address: account.address,
         });
@@ -207,30 +220,32 @@ export const subWalletProvider: WalletProvider = {
 };
 
 export const novaWalletProvider: WalletProvider = {
-  id: 'nova',
-  name: 'Nova Wallet',
-  description: 'Nova Wallet mobile app with browser bridge',
-  icon: 'https://novawallet.io/favicon.ico',
+  id: "nova",
+  name: "Nova Wallet",
+  description: "Nova Wallet mobile app with browser bridge",
+  icon: "https://novawallet.io/favicon.ico",
 
   isAvailable: async () => {
     const extensions = await getAvailableExtensions();
-    return extensions.some(name => name.includes('nova'));
+    return extensions.some((name) => name.includes("nova"));
   },
 
   connect: async (): Promise<WalletConnection> => {
     if (!isBrowser()) {
-      throw new Error('Nova Wallet is only available in browser environment');
+      throw new Error("Nova Wallet is only available in browser environment");
     }
 
-    const { web3Enable, web3Accounts, web3FromAddress } = await import('@polkadot/extension-dapp');
+    const { web3Enable, web3Accounts, web3FromAddress } = await import(
+      "@polkadot/extension-dapp"
+    );
 
-    await web3Enable('Polkadot Auth');
+    await web3Enable("Polkadot Auth");
 
     const accounts = await web3Accounts();
 
     return {
       provider: novaWalletProvider,
-      accounts: accounts.map(account => ({
+      accounts: accounts.map((account) => ({
         address: account.address,
         name: account.meta.name,
         type: account.type,
@@ -240,18 +255,18 @@ export const novaWalletProvider: WalletProvider = {
 
       signMessage: async (message: string): Promise<string> => {
         if (accounts.length === 0) {
-          throw new Error('No accounts available');
+          throw new Error("No accounts available");
         }
 
         const account = accounts[0];
         const injector = await web3FromAddress(account.address);
 
         if (!injector.signer.signRaw) {
-          throw new Error('Signer does not support raw signing');
+          throw new Error("Signer does not support raw signing");
         }
 
         const signResult = await injector.signer.signRaw({
-          type: 'bytes',
+          type: "bytes",
           data: message,
           address: account.address,
         });
@@ -274,7 +289,7 @@ export const DEFAULT_PROVIDERS: WalletProvider[] = [
 ];
 
 export function getProviderById(id: string): WalletProvider | undefined {
-  return DEFAULT_PROVIDERS.find(provider => provider.id === id);
+  return DEFAULT_PROVIDERS.find((provider) => provider.id === id);
 }
 
 export async function getAvailableProviders(): Promise<WalletProvider[]> {
@@ -289,15 +304,17 @@ export async function getAvailableProviders(): Promise<WalletProvider[]> {
   return availableProviders;
 }
 
-export function createCustomProvider(config: Partial<WalletProvider>): WalletProvider {
+export function createCustomProvider(
+  config: Partial<WalletProvider>,
+): WalletProvider {
   return {
-    id: 'custom',
-    name: 'Custom Provider',
-    description: 'Custom wallet provider',
-    icon: '',
+    id: "custom",
+    name: "Custom Provider",
+    description: "Custom wallet provider",
+    icon: "",
     isAvailable: () => Promise.resolve(false),
     connect: async () => {
-      throw new Error('Custom provider not implemented');
+      throw new Error("Custom provider not implemented");
     },
     ...config,
   };

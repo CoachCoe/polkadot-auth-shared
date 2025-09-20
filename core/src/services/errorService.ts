@@ -14,7 +14,7 @@ export class ErrorService {
     code: string,
     message: string,
     details?: any,
-    wallet?: string
+    wallet?: string,
   ): PolkadotAuthError {
     return {
       code,
@@ -30,46 +30,52 @@ export class ErrorService {
    */
   static walletNotAvailable(walletName: string): PolkadotAuthError {
     return this.createError(
-      'WALLET_NOT_AVAILABLE',
+      "WALLET_NOT_AVAILABLE",
       `Wallet ${walletName} is not installed or not available`,
       { walletName },
-      walletName
+      walletName,
     );
   }
 
-  static walletConnectionFailed(walletName: string, originalError?: any): PolkadotAuthError {
+  static walletConnectionFailed(
+    walletName: string,
+    originalError?: any,
+  ): PolkadotAuthError {
     return this.createError(
-      'WALLET_CONNECTION_FAILED',
+      "WALLET_CONNECTION_FAILED",
       `Failed to connect to ${walletName} wallet`,
       { originalError },
-      walletName
+      walletName,
     );
   }
 
-  static walletSigningFailed(walletName: string, originalError?: any): PolkadotAuthError {
+  static walletSigningFailed(
+    walletName: string,
+    originalError?: any,
+  ): PolkadotAuthError {
     return this.createError(
-      'WALLET_SIGNING_FAILED',
+      "WALLET_SIGNING_FAILED",
       `Failed to sign message with ${walletName} wallet`,
       { originalError },
-      walletName
+      walletName,
     );
   }
 
   static noAccountsFound(walletName: string): PolkadotAuthError {
     return this.createError(
-      'NO_ACCOUNTS_FOUND',
+      "NO_ACCOUNTS_FOUND",
       `No accounts found in ${walletName} wallet`,
       { walletName },
-      walletName
+      walletName,
     );
   }
 
   static walletNotConnected(walletName: string): PolkadotAuthError {
     return this.createError(
-      'WALLET_NOT_CONNECTED',
+      "WALLET_NOT_CONNECTED",
       `${walletName} wallet is not connected`,
       { walletName },
-      walletName
+      walletName,
     );
   }
 
@@ -77,53 +83,73 @@ export class ErrorService {
    * Authentication-related errors
    */
   static authenticationFailed(reason?: string): PolkadotAuthError {
-    return this.createError('AUTHENTICATION_FAILED', reason || 'Authentication failed', { reason });
+    return this.createError(
+      "AUTHENTICATION_FAILED",
+      reason || "Authentication failed",
+      { reason },
+    );
   }
 
   static challengeExpired(): PolkadotAuthError {
-    return this.createError('CHALLENGE_EXPIRED', 'Authentication challenge has expired');
+    return this.createError(
+      "CHALLENGE_EXPIRED",
+      "Authentication challenge has expired",
+    );
   }
 
   static invalidSignature(): PolkadotAuthError {
-    return this.createError('INVALID_SIGNATURE', 'Invalid signature provided');
+    return this.createError("INVALID_SIGNATURE", "Invalid signature provided");
   }
 
   static sessionExpired(): PolkadotAuthError {
-    return this.createError('SESSION_EXPIRED', 'User session has expired');
+    return this.createError("SESSION_EXPIRED", "User session has expired");
   }
 
   static sessionNotFound(): PolkadotAuthError {
-    return this.createError('SESSION_NOT_FOUND', 'User session not found');
+    return this.createError("SESSION_NOT_FOUND", "User session not found");
   }
 
   /**
    * Network-related errors
    */
   static networkError(originalError?: any): PolkadotAuthError {
-    return this.createError('NETWORK_ERROR', 'Network request failed', { originalError });
+    return this.createError("NETWORK_ERROR", "Network request failed", {
+      originalError,
+    });
   }
 
   static serverError(statusCode: number, message?: string): PolkadotAuthError {
-    return this.createError('SERVER_ERROR', message || `Server error: ${statusCode}`, {
-      statusCode,
-    });
+    return this.createError(
+      "SERVER_ERROR",
+      message || `Server error: ${statusCode}`,
+      {
+        statusCode,
+      },
+    );
   }
 
   /**
    * Configuration errors
    */
-  static invalidConfiguration(property: string, value?: any): PolkadotAuthError {
-    return this.createError('INVALID_CONFIGURATION', `Invalid configuration: ${property}`, {
-      property,
-      value,
-    });
+  static invalidConfiguration(
+    property: string,
+    value?: any,
+  ): PolkadotAuthError {
+    return this.createError(
+      "INVALID_CONFIGURATION",
+      `Invalid configuration: ${property}`,
+      {
+        property,
+        value,
+      },
+    );
   }
 
   static missingConfiguration(property: string): PolkadotAuthError {
     return this.createError(
-      'MISSING_CONFIGURATION',
+      "MISSING_CONFIGURATION",
       `Missing required configuration: ${property}`,
-      { property }
+      { property },
     );
   }
 
@@ -131,7 +157,9 @@ export class ErrorService {
    * Generic errors
    */
   static unknownError(originalError?: any): PolkadotAuthError {
-    return this.createError('UNKNOWN_ERROR', 'An unknown error occurred', { originalError });
+    return this.createError("UNKNOWN_ERROR", "An unknown error occurred", {
+      originalError,
+    });
   }
 
   /**
@@ -143,7 +171,12 @@ export class ErrorService {
     }
 
     if (error instanceof Error) {
-      return this.createError('ERROR', error.message, { stack: error.stack }, wallet);
+      return this.createError(
+        "ERROR",
+        error.message,
+        { stack: error.stack },
+        wallet,
+      );
     }
 
     return this.unknownError(error);
@@ -155,10 +188,10 @@ export class ErrorService {
   static isPolkadotAuthError(error: any): error is PolkadotAuthError {
     return (
       error &&
-      typeof error === 'object' &&
-      typeof error.code === 'string' &&
-      typeof error.message === 'string' &&
-      typeof error.timestamp === 'number'
+      typeof error === "object" &&
+      typeof error.code === "string" &&
+      typeof error.message === "string" &&
+      typeof error.timestamp === "number"
     );
   }
 
@@ -167,21 +200,24 @@ export class ErrorService {
    */
   static getUserFriendlyMessage(error: PolkadotAuthError): string {
     const friendlyMessages: Record<string, string> = {
-      WALLET_NOT_AVAILABLE: 'Please install a Polkadot wallet extension',
-      WALLET_CONNECTION_FAILED: 'Failed to connect to wallet. Please try again.',
-      WALLET_SIGNING_FAILED: 'Failed to sign message. Please try again.',
-      NO_ACCOUNTS_FOUND: 'No accounts found in wallet. Please add an account.',
-      WALLET_NOT_CONNECTED: 'Wallet is not connected. Please connect your wallet.',
-      AUTHENTICATION_FAILED: 'Authentication failed. Please try again.',
-      CHALLENGE_EXPIRED: 'Authentication challenge expired. Please try again.',
-      INVALID_SIGNATURE: 'Invalid signature. Please try again.',
-      SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
-      SESSION_NOT_FOUND: 'Session not found. Please sign in again.',
-      NETWORK_ERROR: 'Network error. Please check your connection and try again.',
-      SERVER_ERROR: 'Server error. Please try again later.',
-      INVALID_CONFIGURATION: 'Configuration error. Please contact support.',
-      MISSING_CONFIGURATION: 'Configuration error. Please contact support.',
-      UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
+      WALLET_NOT_AVAILABLE: "Please install a Polkadot wallet extension",
+      WALLET_CONNECTION_FAILED:
+        "Failed to connect to wallet. Please try again.",
+      WALLET_SIGNING_FAILED: "Failed to sign message. Please try again.",
+      NO_ACCOUNTS_FOUND: "No accounts found in wallet. Please add an account.",
+      WALLET_NOT_CONNECTED:
+        "Wallet is not connected. Please connect your wallet.",
+      AUTHENTICATION_FAILED: "Authentication failed. Please try again.",
+      CHALLENGE_EXPIRED: "Authentication challenge expired. Please try again.",
+      INVALID_SIGNATURE: "Invalid signature. Please try again.",
+      SESSION_EXPIRED: "Your session has expired. Please sign in again.",
+      SESSION_NOT_FOUND: "Session not found. Please sign in again.",
+      NETWORK_ERROR:
+        "Network error. Please check your connection and try again.",
+      SERVER_ERROR: "Server error. Please try again later.",
+      INVALID_CONFIGURATION: "Configuration error. Please contact support.",
+      MISSING_CONFIGURATION: "Configuration error. Please contact support.",
+      UNKNOWN_ERROR: "An unexpected error occurred. Please try again.",
     };
 
     return friendlyMessages[error.code] || error.message;
