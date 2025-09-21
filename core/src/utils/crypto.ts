@@ -26,9 +26,10 @@ class BrowserCryptoUtils implements CryptoUtils {
     ) {
       window.crypto.getRandomValues(array);
     } else {
-      // Fallback for environments without crypto.getRandomValues
+      // SECURITY FIX: Use crypto-js for secure random generation instead of Math.random()
+      const secureRandom = CryptoJS.lib.WordArray.random(size);
       for (let i = 0; i < size; i++) {
-        array[i] = Math.floor(Math.random() * 256);
+        array[i] = secureRandom.words[Math.floor(i / 4)] >>> (8 * (3 - (i % 4))) & 0xff;
       }
     }
     return array;
@@ -83,12 +84,17 @@ class BrowserCryptoUtils implements CryptoUtils {
       return window.crypto.randomUUID();
     }
 
-    // Fallback UUID v4 implementation
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === "x" ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    // SECURITY FIX: Use crypto-js for secure UUID generation
+    const randomBytes = CryptoJS.lib.WordArray.random(16);
+    const hex = randomBytes.toString(CryptoJS.enc.Hex);
+    
+    return [
+      hex.substring(0, 8),
+      hex.substring(8, 12),
+      '4' + hex.substring(13, 16), // Version 4
+      ((parseInt(hex.substring(16, 17), 16) & 0x3) | 0x8).toString(16) + hex.substring(17, 20), // Variant bits
+      hex.substring(20, 32)
+    ].join('-');
   }
 
   createHmac(algorithm: string, key: string | Uint8Array) {

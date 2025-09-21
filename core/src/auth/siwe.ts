@@ -93,9 +93,8 @@ export class SIWEAuthService {
           // Next line should be the address
           if (i + 1 < lines.length) {
             const addressLine = lines[i + 1].trim();
-            if (this.isValidPolkadotAddress(addressLine)) {
-              parsed.address = addressLine;
-            }
+            // Note: This is synchronous parsing, address validation happens later
+            parsed.address = addressLine;
           }
         } else if (line.startsWith("URI: ")) {
           parsed.uri = line.substring(5);
@@ -116,9 +115,11 @@ export class SIWEAuthService {
         }
       }
 
-      const addressIndex = lines.findIndex((line) =>
-        this.isValidPolkadotAddress(line.trim()),
-      );
+      const addressIndex = lines.findIndex((line) => {
+        const trimmed = line.trim();
+        // Basic format check for parsing, full validation happens later
+        return /^[1-9A-HJ-NP-Za-km-z]{47,48}$/.test(trimmed);
+      });
       const uriIndex = lines.findIndex((line) => line.startsWith("URI: "));
       if (
         addressIndex !== -1 &&
@@ -165,9 +166,15 @@ export class SIWEAuthService {
     return requiredFields.every((field) => message.includes(field));
   }
 
-  isValidPolkadotAddress(address: string): boolean {
-    // Polkadot addresses are 47-48 characters long and use base58 encoding
-    return /^[1-9A-HJ-NP-Za-km-z]{47,48}$/.test(address);
+  async isValidPolkadotAddress(address: string): Promise<boolean> {
+    try {
+      const { isAddress } = await import("@polkadot/util-crypto");
+      return isAddress(address);
+    } catch (error) {
+      console.warn("Failed to import Polkadot crypto utilities, using fallback validation");
+      // Fallback regex validation (less secure but better than nothing)
+      return /^[1-9A-HJ-NP-Za-km-z]{47,48}$/.test(address);
+    }
   }
 
   generateNonce(): string {
@@ -245,9 +252,62 @@ export class SIWEAuthService {
         }
       }
 
-      return {
-        success: true,
-      };
+      // SECURITY FIX: Perform actual cryptographic signature verification
+      try {
+        const { signatureVerify, decodeAddress, isAddress } = await import(
+          "@polkadot/util-crypto"
+        );
+
+        // Validate the address format
+        if (!isAddress(parsedMessage.address)) {
+          return {
+            success: false,
+            error: "Invalid Polkadot address format",
+            errorCode: "INVALID_ADDRESS_FORMAT",
+          };
+        }
+
+        // Decode the address to get the public key
+        const publicKey = decodeAddress(parsedMessage.address);
+
+        // Verify the signature using Polkadot's signature verification
+        const verification = signatureVerify(
+          signature.message,
+          signature.signature,
+          publicKey,
+        );
+
+        if (!verification.isValid) {
+          return {
+            success: false,
+            error: "Signature verification failed",
+            errorCode: "INVALID_SIGNATURE",
+          };
+        }
+
+        // Additional security checks
+        if (
+          verification.crypto !== "sr25519" &&
+          verification.crypto !== "ed25519"
+        ) {
+          return {
+            success: false,
+            error: "Unsupported signature algorithm",
+            errorCode: "UNSUPPORTED_ALGORITHM",
+          };
+        }
+
+        return {
+          success: true,
+        };
+      } catch (cryptoError) {
+        console.error("Cryptographic verification error:", cryptoError);
+        return {
+          success: false,
+          error: "Cryptographic verification failed",
+          errorCode: "CRYPTO_ERROR",
+        };
+      }
     } catch (error) {
       console.error("Error verifying SIWE signature:", error);
       return {
