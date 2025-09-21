@@ -13,8 +13,22 @@ import {
   WalletProvider,
 } from './types/index.js';
 import { randomBytes, randomUUID } from './utils/crypto.js';
+import { validateString, validateEmail, validateUrl, validateNonce, validateClientId, validateDomain, validateChainId, RateLimiter } from './utils/validation.js';
+import { createAuthError, handleError, logError, ErrorCode, ErrorSeverity, type AuthError } from './utils/errors.js';
 
 export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAuthInstance {
+  // SECURITY: Validate input configuration
+  if (config.defaultChain) {
+    const chainValidation = validateChainId(config.defaultChain);
+    if (!chainValidation.isValid) {
+      throw createAuthError(
+        ErrorCode.VALIDATION_ERROR,
+        `Invalid default chain: ${chainValidation.error}`,
+        { context: 'createPolkadotAuth' }
+      );
+    }
+  }
+
   const finalConfig: PolkadotAuthConfig = {
     defaultChain: 'polkadot',
     chains: DEFAULT_CHAINS,
@@ -58,6 +72,32 @@ export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAut
     config: finalConfig,
 
     async createChallenge(clientId: string, userAddress?: string): Promise<Challenge> {
+      // SECURITY: Validate input parameters
+      const clientIdValidation = validateClientId(clientId);
+      if (!clientIdValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.VALIDATION_ERROR,
+          `Invalid client ID: ${clientIdValidation.error}`,
+          { context: 'createChallenge' }
+        );
+      }
+
+      if (userAddress) {
+        const addressValidation = validateString(userAddress, {
+          required: true,
+          minLength: 47,
+          maxLength: 48,
+          pattern: /^[1-9A-HJ-NP-Za-km-z]{47,48}$/,
+        });
+        if (!addressValidation.isValid) {
+          throw createAuthError(
+            ErrorCode.INVALID_ADDRESS,
+            `Invalid user address: ${addressValidation.error}`,
+            { context: 'createChallenge' }
+          );
+        }
+      }
+
       const chainId = finalConfig.defaultChain;
       return siweAuth.createChallenge(clientId, userAddress, chainId);
     },
@@ -71,6 +111,31 @@ export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAut
       clientId: string,
       parsedMessage: SIWEMessage
     ): Promise<Session> {
+      // SECURITY: Validate input parameters
+      const addressValidation = validateString(address, {
+        required: true,
+        minLength: 47,
+        maxLength: 48,
+        pattern: /^[1-9A-HJ-NP-Za-km-z]{47,48}$/,
+      });
+      if (!addressValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.INVALID_ADDRESS,
+          `Invalid address: ${addressValidation.error}`,
+          { context: 'createSession' }
+        );
+      }
+
+      const clientIdValidation = validateClientId(clientId);
+      if (!clientIdValidation.isValid) {
+        throw createAuthError(
+          ErrorCode.VALIDATION_ERROR,
+          `Invalid client ID: ${clientIdValidation.error}`,
+          { context: 'createSession' }
+        );
+      }
+
+      // SECURITY: Use cryptographically secure random generation
       const sessionId = randomUUID();
       const accessToken = Array.from(randomBytes(32))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -88,8 +153,8 @@ export function createPolkadotAuth(config: PolkadotAuthConfig = {}): PolkadotAut
 
       const session: Session = {
         id: sessionId,
-        address,
-        clientId,
+        address: addressValidation.sanitized!,
+        clientId: clientIdValidation.sanitized!,
         accessToken,
         refreshToken,
         accessTokenId: randomUUID(),
@@ -182,5 +247,36 @@ export type {
   ChainConfig,
   LoggingConfig,
 } from './config/productionConfig.js';
+
+// Export validation utilities
+export {
+  validateString,
+  validateEmail,
+  validateUrl,
+  validateNonce,
+  validateClientId,
+  validateDomain,
+  validateChainId,
+  RateLimiter,
+} from './utils/validation.js';
+
+// Export error handling utilities
+export {
+  createAuthError,
+  handleError,
+  logError,
+  sanitizeErrorForClient,
+  ErrorCode,
+  ErrorSeverity,
+  type AuthError,
+} from './utils/errors.js';
+
+// Export crypto utilities
+export {
+  randomBytes,
+  randomUUID,
+  createHash,
+  createHmac,
+} from './utils/crypto.js';
 
 export default createPolkadotAuth;

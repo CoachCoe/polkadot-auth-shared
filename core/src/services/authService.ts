@@ -378,14 +378,8 @@ Expiration Time: ${message.expirationTime}`;
     } catch (error) {
       console.error("Signature verification error:", error);
 
-      // In case of import errors or other issues, fall back to development mode
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(
-          "⚠️  FALLBACK: Using development mode signature verification due to error",
-        );
-        return true;
-      }
-
+      // SECURITY FIX: Never bypass signature verification, even in development
+      console.error("❌ SECURITY: Signature verification failed due to error:", error);
       return false;
     }
   }
